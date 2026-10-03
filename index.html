@@ -547,7 +547,7 @@ function parseSheet(items){
 let PDFJS=null,_pdf=null;
 async function readPdf(f){
   if(!PDFJS){PDFJS=await import("./lib/pdf.min.mjs");PDFJS.GlobalWorkerOptions.workerSrc=new URL("lib/pdf.worker.min.mjs",location.href).href}
-  const doc=await PDFJS.getDocument({data:new Uint8Array(await f.arrayBuffer()),cMapUrl:new URL("lib/cmaps/",location.href).href,cMapPacked:true,verbosity:0}).promise;
+  const doc=await PDFJS.getDocument({data:new Uint8Array(await f.arrayBuffer()),cMapUrl:new URL("lib/cmaps/",location.href).href,cMapPacked:true,verbosity:0,isEvalSupported:false,enableXfa:false}).promise;
   const tc=await (await doc.getPage(1)).getTextContent();doc.destroy();
   return parseSheet(tc.items.map(i=>({s:i.str,x:i.transform[4],y:i.transform[5]})));
 }
