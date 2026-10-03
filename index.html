@@ -386,12 +386,15 @@ function renderDecks(){
   if(curZone!=="short"){const zk=curZone;const ids=sortIds(Object.keys(d[zk]).filter(card));
     if(!ids.length)zl.innerHTML='<li class="empty">まだカードがありません。上の検索から追加してください。</li>';
     grouped(zl,ids.map(card),c=>d[zk][c.id],c=>{const i=c.id;return li(c,qty(d[zk][i],dv=>{const v=d[zk][i]+dv;if(v<=0){delete d[zk][i];gc()}else d[zk][i]=Math.min(3,v);save();renderDecks()}))});}
-  const need={};["main","extra","side"].forEach(zk=>Object.entries(d[zk]).forEach(([i,n])=>{if(card(i))need[i]=(need[i]||0)+n}));
+  // 不足は「不足カード」タブと同じ全体の計算（集計中のデッキ＋このデッキ、設定の数え方に合わせる）で出し、このデッキで使うカードだけを並べる
+  const mine=deckNeed(d),need={},uses={};
+  S.decks.filter(x=>x.id===d.id||inc(x)).forEach(x=>Object.entries(deckNeed(x)).forEach(([i,n])=>{if(!mine[i])return;need[i]=reuse()?Math.max(need[i]||0,n):(need[i]||0)+n;if(x.id!==d.id)(uses[i]=uses[i]||[]).push(`${x.name}${n}枚`)}));
   const sl=$("shortList");sl.innerHTML="";let tot=0;
-  Object.entries(need).forEach(([i,n])=>{
+  sortIds(Object.keys(mine)).forEach(i=>{const n=need[i];
     const lack=n-(S.owned[i]||0);if(lack<=0)return;tot+=lack;
-    const s=document.createElement("span");s.className="short";s.textContent=`所持${S.owned[i]||0}／必要${n}　あと${lack}枚`;
-    sl.append(li(card(i),s));
+    const w=document.createElement("span");w.style.textAlign="right";
+    w.innerHTML=`<span class="short">あと${lack}枚</span><span class="uses">所持${S.owned[i]||0}／${uses[i]?"全体で":""}必要${n}</span>`+(uses[i]?`<span class="uses">ほかに使用：${esc(uses[i].join("、"))}</span>`:"");
+    sl.append(li(card(i),w));
   });
   const stb=$("shortTab");if(stb){stb.textContent=tot?`不足 ${tot}`:"不足 0";if(tot)stb.classList.add("warn")}
   if(!tot)sl.innerHTML='<li class="okmsg">不足カードはありません。</li>';
