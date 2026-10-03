@@ -564,7 +564,14 @@ function layoutJa(el){
       // 行の幅の75%以上まで埋まる位置の中から優先度の高い所を選ぶ。短い行ができないように、それより手前では区切らない
       let far=-1;
       for(;j<tk.length;j++){w+=wd(tk[j].t);if(w>W)break;if(j===tk.length-1){best=j;bp=9;break}far=j;if(w>=W*.75&&tk[j].p>=bp){bp=tk[j].p;best=j}}
-      if(best<i)best=far>=i?far:i;lines.push(tk.slice(i,best+1).map(x=>x.t).join(""));i=best+1}}
+      if(best<i)best=far>=i?far:i;
+      // 残りが最後の1行に収まるのに短すぎる（幅の4割未満）ときは、2行の長さがそろう位置で区切り直す（優先度が同じなら長さのそろうほう）
+      if(best<tk.length-1){const rest=k=>tk.slice(k+1).reduce((a,x)=>a+wd(x.t),0);
+        if(rest(best)<W*.4){let lw=0,cand=null;
+          for(let k=i;k<tk.length-1;k++){lw+=wd(tk[k].t);if(lw>W)break;const r=rest(k);if(r>W||lw<W*.35)continue;
+            const sc=tk[k].p*1000-Math.abs(lw-r);if(!cand||sc>cand.sc)cand={k,sc}}
+          if(cand)best=cand.k}}
+      lines.push(tk.slice(i,best+1).map(x=>x.t).join(""));i=best+1}}
   const key=lines.join("\n");if(el._lk===key&&el.childNodes.length===lines.length*2-1)return;
   el._lk=key;el.replaceChildren(...lines.flatMap((l,k)=>k?[document.createElement("br"),l]:[l]));
 }
