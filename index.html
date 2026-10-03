@@ -194,7 +194,7 @@ ul.list li:first-child{border-top:0}
   </section>
 
   <section id="tab-short" hidden>
-    <div class="panel">
+    <div class="panel" id="incPanel">
       <h2>集計するデッキ</h2>
       <div class="sub" id="shortRule"></div>
       <div class="hscroll" id="incToggles"></div>
@@ -220,6 +220,11 @@ ul.list li:first-child{border-top:0}
         <button type="button" class="switch" id="reuseSw" role="switch" aria-checked="false"><span></span></button>
       </label>
       <div class="sub" id="reuseDesc"></div>
+      <label class="switchrow" for="incSw">
+        <span>不足カードに「集計するデッキ」を表示</span>
+        <button type="button" class="switch" id="incSw" role="switch" aria-checked="false"><span></span></button>
+      </label>
+      <div class="sub">オフでも、デッキ一覧の「集計」で切り替えられます。</div>
     </div>
     <div class="panel">
       <h2>データのバックアップ</h2>
@@ -463,14 +468,17 @@ function renderShort(){
     });
   });
   $("totShortCount").textContent=tot?`計${tot}枚`:"";
-  const bt=Object.values(_buy).reduce((a,b)=>a+b,0);$("buyRow").hidden=!tot;$("buyTot").textContent=bt?`追加する枚数：${bt}枚`:"＋で追加する枚数を選べます";$("buyOk").disabled=!bt;$("buyClear").disabled=!bt;
+  const bt=Object.values(_buy).reduce((a,b)=>a+b,0);$("buyRow").hidden=!tot;$("buyTot").textContent=bt?`追加：${bt}枚`:"＋で枚数を選択";$("buyOk").disabled=!bt;$("buyClear").disabled=!bt;
   if(!tot)ul.innerHTML=S.decks.some(inc)?(CAT.short?'<li class="okmsg">この種類で足りないカードはありません。</li>':'<li class="okmsg">足りないカードはありません。</li>'):'<li class="empty">集計するデッキを選んでください。</li>';
 }
 const reuse=()=>!!(S.opt&&S.opt.reuse);
-function renderOpt(){const r=reuse();$("reuseSw").setAttribute("aria-checked",r);
+// 不足カードの「集計するデッキ」枠は既定で隠す（デッキ一覧の「集計」で切り替えられるため）
+const showInc=()=>!!(S.opt&&S.opt.showInc);
+function renderOpt(){const r=reuse();$("reuseSw").setAttribute("aria-checked",r);$("incSw").setAttribute("aria-checked",showInc());$("incPanel").hidden=!showInc();
   $("reuseDesc").textContent=r?"デッキ間でカードを使い回します。必要枚数は、そのカードをいちばん多く使っているデッキの枚数です（例：Aで3枚、Bで2枚なら3枚）。":"デッキごとに別々に揃えます。必要枚数は、各デッキで使う枚数の合計です（例：Aで3枚、Bで2枚なら5枚）。";
   $("shortRule").textContent=r?"押すと含める／外すを切り替え。カードは使い回す前提で、最も多いデッキの枚数が必要数です。":"押すと含める／外すを切り替え。同じカードは全デッキの合計枚数が必要数です。"}
 $("reuseSw").onclick=()=>{S.opt={...(S.opt||{}),reuse:!reuse()};save();render()};
+$("incSw").onclick=()=>{S.opt={...(S.opt||{}),showInc:!showInc()};save();render()};
 function render(){renderOpt();document.querySelectorAll(".cats").forEach(catBar);renderDecks();renderShort();renderOwned()}
 document.querySelectorAll("#ownTabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#ownTabs button").forEach(x=>x.setAttribute("aria-selected",x===b));$("ownAddView").hidden=b.dataset.v!=="add";$("ownListView").hidden=b.dataset.v!=="list";requestAnimationFrame(fitAll)});
 
