@@ -434,7 +434,7 @@ $("addZone").onchange=renderDecks;
 $("newDeckForm").onsubmit=e=>{e.preventDefault();const n=$("newDeckName").value.trim();if(!n)return;
   const d={id:uid(),name:n,main:{},extra:{},side:{},inc:true};S.decks.push(d);$("newDeckName").value="";okMsg=`「${n}」を保存しました`;openDeck(d.id)};
 $("backToList").onclick=()=>{view="list";$("renameRow").hidden=true;$("delRow").hidden=true;renderDecks()};
-$("renameDeck").onclick=()=>{$("renameRow").hidden=false;$("renameInput").value=deck()?.name||"";$("renameInput").focus()};
+$("renameDeck").onclick=()=>{$("renameRow").hidden=false;$("renameInput").value=deck()?.name||"";noZoom($("renameInput"));$("renameInput").focus()};
 $("renameOk").onclick=()=>{const v=$("renameInput").value.trim();let m=null;if(v&&deck()&&deck().name!==v){deck().name=v;m=`デッキ名を「${v}」に変更しました`}$("renameRow").hidden=true;save(m);renderDecks()};
 $("delDeck").onclick=()=>{$("delRow").hidden=false};
 $("delCancel").onclick=()=>{$("delRow").hidden=true};
@@ -454,6 +454,12 @@ try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}ca
 const _cv=document.createElement("canvas").getContext("2d");
 function fitInput(el){const cs=getComputedStyle(el);const avail=el.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)-24;const t=el.value||el.placeholder;let f=14;
   while(f>10){_cv.font=`${f}px ${cs.fontFamily}`;if(_cv.measureText(t).width<=avail)break;f-=.5}el.style.fontSize=f+"px"}
+// iPhone は16px未満の入力欄にフォーカスすると画面を拡大するので、フォーカスの瞬間だけ16pxにして、すぐ元に戻す
+function noZoom(el){if(!el?.matches?.('input,select')||el.dataset.nz)return;el.dataset.nz=el.style.fontSize||"-";el.style.fontSize="16px";
+  setTimeout(()=>{if(document.activeElement!==el)restoreZoom(el)},1500)}
+function restoreZoom(el){const f=el.dataset.nz;if(!f)return;delete el.dataset.nz;el.style.fontSize=f==="-"?"":f;if(el.matches('input[type=text],input[type=search]'))fitInput(el)}
+document.addEventListener("touchstart",e=>noZoom(e.target),{passive:true,capture:true});
+document.addEventListener("focusin",e=>{const el=e.target;if(el.dataset?.nz)setTimeout(()=>restoreZoom(el),300)});
 function fitTitle(){const el=$("deckTitle");if(!el.offsetParent)return;const cs=getComputedStyle(el);let f=16;while(f>11){_cv.font=`700 ${f}px ${cs.fontFamily}`;if(_cv.measureText(el.textContent).width<=el.clientWidth)break;f-=.5}el.style.fontSize=f+"px"}
 const fitAll=()=>document.querySelectorAll('input[type=text],input[type=search]').forEach(e=>{if(e.offsetParent)fitInput(e)});
 document.addEventListener("input",e=>{if(e.target.matches('input[type=text],input[type=search]'))fitInput(e.target)});

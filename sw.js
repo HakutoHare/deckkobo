@@ -1,5 +1,5 @@
 // デッキ工房 オフライン用。更新時は VERSION を上げる
-const VERSION="1.0.2";
+const VERSION="1.0.3";
 const CACHE="deckkobo-"+VERSION;
 const FILES=["./","index.html","cardlist.json","manifest.webmanifest","icon-192.png","icon-512.png","apple-touch-icon.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)))});
