@@ -450,7 +450,7 @@ document.querySelectorAll("#ownTabs button").forEach(b=>b.onclick=()=>{document.
 
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
   document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x===b));
-  ["decks","short","owned","opt"].forEach(t=>$("tab-"+t).hidden=t!==b.dataset.tab);render();
+  ["decks","short","owned","opt"].forEach(t=>$("tab-"+t).hidden=t!==b.dataset.tab);render();if(b.dataset.tab==="opt")showVer();
 });
 $("cardForm").onsubmit=e=>{e.preventDefault();const n=$("cardName").value.trim();const d=deck();if(!n||!d)return;
   let x=S.cards.find(c=>c.name===n);if(!x){x={id:uid(),name:n,type:$("cardType").value,manual:true};S.cards.push(x)}
@@ -543,7 +543,16 @@ document.addEventListener("click",relayout);
 relayout();
 
 // バージョン表示（sw.js の VERSION を正とする）
-fetch("sw.js").then(r=>r.text()).then(t=>{const m=t.match(/VERSION="([^"]+)"/);$("appVer").textContent=m?m[1]:"不明"}).catch(()=>{$("appVer").textContent="不明"});
+// 表示するのは「いま動いている版」。公開場所の sw.js ではなく、この画面を配っている保存データ（deckkobo-版）の名前から読む
+// 新しい版が待機中なら保存データが2つあるので、古いほうが動いている版
+const vnum=v=>v.split(".").map(n=>n.padStart(4,"0")).join(".");
+async function showVer(){
+  try{const ks=(await caches.keys()).filter(k=>k.startsWith("deckkobo-")).map(k=>k.slice(9)).sort((a,b)=>vnum(a)<vnum(b)?-1:1);
+    if(navigator.serviceWorker?.controller&&ks.length){const reg=await navigator.serviceWorker.getRegistration();const cur=reg?.waiting&&ks.length>1?ks[0]:ks.at(-1);
+      $("appVer").textContent=cur+(cur!==ks.at(-1)?`（新しい版 ${ks.at(-1)} があります。「更新を確認」を押してください）`:"");return}}catch(e){}
+  fetch("sw.js").then(r=>r.text()).then(t=>{const m=t.match(/VERSION="([^"]+)"/);$("appVer").textContent=m?m[1]:"不明"}).catch(()=>{$("appVer").textContent="不明"});
+}
+showVer();
 const DATA_DATE="2026年9月24日時点";
 // デッキリスト（PDF）の読み込み。ニューロンが出力する大会提出用の用紙の形に合わせている
 // PDF の文字と位置から、ゾーンごとの{name,n,t}を取り出す。「枚数」の見出しの位置で列を分ける
