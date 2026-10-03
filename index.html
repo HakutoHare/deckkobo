@@ -113,7 +113,7 @@ ul.list li:first-child{border-top:0}
 .cats .toggle{font-size:12px;padding:2px 9px}
 </style>
 <style>html{box-sizing:border-box;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);color-scheme:light}body{margin:0;font-size:14px;-webkit-text-size-adjust:100%}*,*::before,*::after{box-sizing:inherit}[hidden]{display:none!important}</style>
-<style>.modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}.modal .panel{width:100%;max-width:420px;max-height:100%;overflow:auto}.modal .miss{color:var(--warn);font-size:13px;max-height:8em;overflow:auto;overflow-wrap:anywhere}</style>
+<style>.hdr{flex-wrap:nowrap;gap:4px}.hdr .btn{white-space:nowrap;padding:3px 6px;flex:none;font-size:clamp(10px,3.1vw,12px)}.modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}.modal .panel{width:100%;max-width:420px;max-height:100%;overflow:auto}.modal .miss{color:var(--warn);font-size:13px;max-height:8em;overflow:auto;overflow-wrap:anywhere}</style>
 </head>
 <body>
 
@@ -148,18 +148,15 @@ ul.list li:first-child{border-top:0}
    </div>
    <div id="deckEditView" class="col" hidden>
     <div class="panel">
-      <div class="row">
+      <div class="row hdr">
         <button class="btn ghost sm" id="backToList">← 一覧</button>
         <span style="flex:1"></span>
+        <button class="btn ghost sm" id="ownAll">所持追加</button>
+        <button class="btn ghost sm" id="ownSub">所持削除</button>
         <button class="btn ghost sm" id="renameDeck">名前変更</button>
         <button class="btn del sm" id="delDeck">削除</button>
       </div>
       <div class="decktitle" id="deckTitle"></div>
-      <div class="row" id="ownRow" style="flex-wrap:nowrap">
-        <span class="sub" style="flex:1">このデッキのカードを所持に</span>
-        <button class="btn ghost sm" id="ownAll">すべて登録</button>
-        <button class="btn del sm" id="ownSub">差し引く</button>
-      </div>
       <div class="row" id="ownConfRow" hidden style="flex-wrap:nowrap;justify-content:space-between">
         <span style="font-size:14px" id="ownConfMsg"></span>
         <span class="row" style="flex:none;flex-wrap:nowrap;gap:6px">
@@ -469,10 +466,10 @@ $("renameOk").onclick=()=>{const v=$("renameInput").value.trim();let m=null;if(v
 // デッキのカードを所持にまとめて登録／差し引く。枚数はメイン・EX・サイドの合計
 const deckNeed=d=>{const need={};["main","extra","side"].forEach(zk=>Object.entries(d[zk]).forEach(([i,n])=>{if(card(i))need[i]=(need[i]||0)+n}));return need};
 var _own=null;
-const ownConf=(mode,msg)=>{_own=mode;$("ownConfMsg").textContent=msg;$("ownOk").className="btn sm"+(mode==="sub"?" del":"");$("ownConfRow").hidden=false;$("ownRow").hidden=true};
-function ownClose(){_own=null;$("ownConfRow").hidden=true;$("ownRow").hidden=false}
-$("ownAll").onclick=()=>ownConf("add","足りない分を増やして、すべて所持にしますか？");
-$("ownSub").onclick=()=>ownConf("sub","このデッキの枚数分を所持から減らしますか？");
+const ownConf=(mode,msg)=>{_own=mode;$("ownConfMsg").textContent=msg;$("ownOk").className="btn sm"+(mode==="sub"?" del":"");$("ownConfRow").hidden=false};
+function ownClose(){_own=null;$("ownConfRow").hidden=true}
+$("ownAll").onclick=()=>ownConf("add","このデッキのカードを、足りない分だけ所持に追加しますか？");
+$("ownSub").onclick=()=>ownConf("sub","このデッキで使う枚数分を、所持から減らしますか？");
 $("ownCancel").onclick=ownClose;
 $("ownOk").onclick=()=>{const d=deck();if(!d||!_own)return;const need=deckNeed(d);let k=0;
   Object.entries(need).forEach(([i,n])=>{const o=S.owned[i]||0;
@@ -617,7 +614,8 @@ $("impOk").onclick=()=>{if(!_imp)return;S=_imp;S.owned=S.owned||{};_imp=null;$("
 let _reg=null;
 if("serviceWorker" in navigator){
   navigator.serviceWorker.register("sw.js").then(r=>{_reg=r}).catch(()=>{});
-  let _reloading=false;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(_reloading)return;_reloading=true;location.reload()});
+  // 初回はオフライン用の準備が整うだけなので開き直さない。新しい版に切り替わったときだけ開き直す
+  const hadCtl=!!navigator.serviceWorker.controller;let _reloading=false;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(_reloading||!hadCtl)return;_reloading=true;location.reload()});
 }
 $("updBtn").onclick=async()=>{
   if(!_reg){toast("更新を確認できませんでした","ホーム画面に追加したアプリから開いてください。");return}
