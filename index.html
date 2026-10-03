@@ -450,8 +450,10 @@ function renderDecks(){
   shortRows(S.decks.filter(x=>x.id===d.id||inc(x)),mine).filter(r=>r.lack>0&&r.uses[d.id]).sort((a,b)=>cmp(item(a.k),item(b.k))).forEach(({k,need:n,own,lack,uses:us})=>{tot+=lack;
     const oth=Object.entries(us).filter(([did])=>did!==d.id).map(([did,v])=>`${S.decks.find(x=>x.id===did).name}${v}枚`);
     const w=document.createElement("span");w.style.textAlign="right";
-    w.innerHTML=`<span class="short">あと${lack}枚</span><span class="uses">所持${own}／${oth.length?"全体で":""}必要${n}</span>`+(oth.length?`<span class="uses">ほかに使用：${esc(oth.join("、"))}</span>`:"");
-    sl.append(li(item(k),w));
+    w.innerHTML=`<span class="short">あと${lack}枚</span><span class="uses">所持${own}／${oth.length?"全体で":""}必要${n}</span>`;w.style.flex="none";
+    // 「ほかに使用」は長くなりやすいので、カード名を押しつぶさないよう行の下に全幅で出す
+    const l=li(item(k),w);if(oth.length){l.style.flexWrap="wrap";const o=document.createElement("span");o.className="uses";o.style.cssText="flex-basis:100%;text-align:right";o.textContent=`ほかに使用：${oth.join("、")}`;l.append(o)}
+    sl.append(l);
   });
   const stb=$("shortTab");if(stb){stb.textContent=tot?`不足 ${tot}`:"不足 0";if(tot)stb.classList.add("warn")}
   if(!tot)sl.innerHTML='<li class="okmsg">不足カードはありません。</li>';
