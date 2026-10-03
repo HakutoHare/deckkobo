@@ -350,10 +350,19 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[m]);
 const card=id=>S.cards.find(c=>c.id===id);
 const deck=()=>S.decks.find(d=>d.id===S.cur)||S.decks[0];
+// レア度：所持枚数（S.owned）の内訳を S.rar = {カードid: {レア度: 枚数}} に持つ。内訳に入っていない分は「指定なし」
+const RARITY=[["N","ノーマル"],["R","レア"],["SR","スーパーレア"],["UR","ウルトラレア"],["SE","シークレットレア"],["PSE","プリシク"],["UL","レリーフ"],["CR","コレクターズレア"],["HR","ホログラフィックレア"],["QCSE","25thシク"],["PE","パラレルレア"],["KC","KCレア"]];
+const rarOf=id=>(S.rar&&S.rar[id])||{};
+// 印は RARITY の後ろのものから順に並べる（おおむねレア度の高い順）
+function rarBadges(id){const r=rarOf(id);return RARITY.filter(([k])=>r[k]>0).reverse().map(([k,l])=>`<span class="rb rb-${k}" title="${l} ${r[k]}枚">${k}${r[k]>1?"×"+r[k]:""}</span>`).join("")}
+// 合計より内訳が多くなったら（所持を減らしたときなど）、一覧の前のほう（低いレア度）から減らしてそろえる
+function fixRar(){if(!S.rar)return;for(const id in S.rar){const o=S.owned[id]||0,r=S.rar[id];let sum=Object.values(r).reduce((a,b)=>a+b,0);
+  for(const [k] of RARITY){if(sum<=o)break;const d=Math.min(r[k]||0,sum-o);if(d){r[k]-=d;sum-=d}}
+  for(const k in r)if(!r[k])delete r[k];if(!Object.keys(r).length)delete S.rar[id]}}
 
 let okMsg=null;
 function save(msg){
-  if(msg)okMsg=msg;if(typeof fixRar==="function")fixRar();
+  if(msg)okMsg=msg;fixRar();
   delete S.isSample;
   let local=true;try{localStorage.setItem("deckkobo",JSON.stringify(S))}catch(e){local=false}
   if(!ref){if(okMsg){local?toast(okMsg,null,"ok"):toast("保存に失敗しました","この端末に保存できませんでした。");okMsg=null}return}
@@ -819,15 +828,6 @@ $("imgForm").onsubmit=e=>{e.preventDefault();const n=$("imgName").value.trim();i
   for(const z in _img)_img[z].forEach(c=>{if(c.pick<0)return;const x0=c.cands[c.pick];let x=S.cards.find(y=>y.name===x0.n);if(!x){x={id:uid(),name:x0.n,type:x0.t};S.cards.push(x)}
     const zk=z==="side"?"side":(x.type==="extra"?"extra":"main");d[zk][x.id]=Math.min(3,(d[zk][x.id]||0)+c.n)});
   S.decks.push(d);closeImg();okMsg=`「${n}」を読み込みました`;openDeck(d.id)};
-// レア度：所持枚数（S.owned）の内訳を S.rar = {カードid: {レア度: 枚数}} に持つ。内訳に入っていない分は「指定なし」
-const RARITY=[["N","ノーマル"],["R","レア"],["SR","スーパーレア"],["UR","ウルトラレア"],["SE","シークレットレア"],["PSE","プリシク"],["UL","レリーフ"],["CR","コレクターズレア"],["HR","ホログラフィックレア"],["QCSE","25thシク"],["PE","パラレルレア"],["KC","KCレア"]];
-const rarOf=id=>(S.rar&&S.rar[id])||{};
-// 印は RARITY の後ろのものから順に並べる（おおむねレア度の高い順）
-function rarBadges(id){const r=rarOf(id);return RARITY.filter(([k])=>r[k]>0).reverse().map(([k,l])=>`<span class="rb rb-${k}" title="${l} ${r[k]}枚">${k}${r[k]>1?"×"+r[k]:""}</span>`).join("")}
-// 合計より内訳が多くなったら（所持を減らしたときなど）、一覧の前のほう（低いレア度）から減らしてそろえる
-function fixRar(){if(!S.rar)return;for(const id in S.rar){const o=S.owned[id]||0,r=S.rar[id];let sum=Object.values(r).reduce((a,b)=>a+b,0);
-  for(const [k] of RARITY){if(sum<=o)break;const d=Math.min(r[k]||0,sum-o);if(d){r[k]-=d;sum-=d}}
-  for(const k in r)if(!r[k])delete r[k];if(!Object.keys(r).length)delete S.rar[id]}}
 let _rar=null;
 function openRar(id){const c=card(id);if(!c)return;const r=rarOf(id),o=S.owned[id]||0;const sum=Object.values(r).reduce((a,b)=>a+b,0);
   _rar={id,v:{"":Math.max(0,o-sum),...r}};$("rarTitle").textContent=c.name;renderRar();$("rarModal").hidden=false}
