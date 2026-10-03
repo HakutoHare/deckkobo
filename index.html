@@ -426,6 +426,7 @@ function renderDeckList(){
     const sw=document.createElement("button");sw.type="button";sw.className="switch";sw.setAttribute("role","switch");sw.setAttribute("aria-checked",inc(d));sw.setAttribute("aria-label",`「${d.name}」を集計に含める`);sw.innerHTML="<span></span>";sw.onclick=()=>{d.inc=!inc(d);save();renderDeckList()};
     const lab=document.createElement("span");lab.className="swlab";lab.textContent="集計";l.append(n,lab,sw);ul.append(l)});
 }
+const _keepShort=new Set();
 function renderShort(){
   const t=$("incToggles");t.innerHTML="";
   if(!S.decks.length)t.innerHTML='<span class="empty">デッキがありません。</span>';
@@ -433,16 +434,20 @@ function renderShort(){
   const need={},uses={};
   S.decks.filter(inc).forEach(d=>["main","extra","side"].forEach(z=>Object.entries(d[z]).forEach(([i,n])=>{if(!card(i))return;need[i]=reuse()?Math.max(need[i]||0,n):(need[i]||0)+n;(uses[i]=uses[i]||{})[d.id]=(uses[i][d.id]||0)+n})));
   const ul=$("totShortList");ul.innerHTML="";let tot=0;
-  const rows=Object.entries(need).map(([i,n])=>[i,n,n-(S.owned[i]||0)]).filter(x=>x[2]>0);
+  // 所持の＋−で足りたカードも、この画面を離れるまでは一覧に残す（−で戻せるように）
+  const rows=Object.entries(need).map(([i,n])=>[i,n,n-(S.owned[i]||0)]).filter(x=>x[2]>0||_keepShort.has(x[0]));
   ORDER.filter(ty=>!CAT.short||ty===CAT.short).forEach(ty=>{
     const g=rows.filter(r=>card(r[0]).type===ty).sort((a,b)=>cmp(card(a[0]),card(b[0])));
     if(!g.length)return;
-    const sub=g.reduce((a,r)=>a+r[2],0);
+    const sub=g.reduce((a,r)=>a+Math.max(0,r[2]),0);
     const h=document.createElement("li");h.className="grouphead g-"+ty;h.tabIndex=0;h.setAttribute("role","button");h.title="このカテゴリの先頭へ";{const go=()=>ul.scrollTo({top:h.offsetTop,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});h.onclick=go;h.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}}}h.innerHTML=`<span class="glab">${TYPE[ty]}</span><span class="count">${g.length}種・${sub}枚</span>`;ul.append(h);
     g.forEach(([i,n,lack])=>{
-      tot+=lack;const w=document.createElement("span");w.style.textAlign="right";
-      w.innerHTML=`<span class="short">あと${lack}枚</span><span class="uses">所持${S.owned[i]||0}／必要${n}</span>`;
-      const l=li(card(i),w);l.classList.add("tap");l.tabIndex=0;l.setAttribute("role","button");l.setAttribute("aria-expanded","false");
+      tot+=Math.max(0,lack);const w=document.createElement("span");w.style.textAlign="right";
+      w.innerHTML=(lack>0?`<span class="short">あと${lack}枚</span>`:`<span class="okmsg">足りています</span>`)+`<span class="uses">所持${S.owned[i]||0}／必要${n}</span>`;
+      const q=qty(S.owned[i]||0,dv=>{const v=Math.max(0,(S.owned[i]||0)+dv);if(v)S.owned[i]=v;else delete S.owned[i];_keepShort.add(i);save();renderShort()});
+      q.querySelectorAll("button").forEach((x,k)=>x.setAttribute("aria-label",k?"所持を増やす":"所持を減らす"));q.onclick=e=>e.stopPropagation();q.onkeydown=e=>e.stopPropagation();
+      const wr=document.createElement("span");wr.className="row";wr.style.cssText="flex:none;flex-wrap:nowrap;gap:8px";wr.append(w,q);
+      const l=li(card(i),wr);l.classList.add("tap");l.tabIndex=0;l.setAttribute("role","button");l.setAttribute("aria-expanded","false");
       const box=document.createElement("li");box.className="usebox";box.hidden=true;
       Object.entries(uses[i]).forEach(([did,v])=>{const d=S.decks.find(x=>x.id===did);const b=document.createElement("button");b.className="btn ghost";b.textContent=`${d.name}（${v}枚）`;b.onclick=()=>{goTab("decks");openDeck(did)};box.append(b)});
       const tg=()=>{box.hidden=!box.hidden;l.setAttribute("aria-expanded",!box.hidden)};
@@ -463,7 +468,7 @@ document.querySelectorAll("#ownTabs button").forEach(b=>b.onclick=()=>{document.
 
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
   document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x===b));
-  ["decks","short","owned","opt"].forEach(t=>$("tab-"+t).hidden=t!==b.dataset.tab);render();if(b.dataset.tab==="opt")showVer();
+  _keepShort.clear();["decks","short","owned","opt"].forEach(t=>$("tab-"+t).hidden=t!==b.dataset.tab);render();if(b.dataset.tab==="opt")showVer();
 });
 $("cardForm").onsubmit=e=>{e.preventDefault();const n=$("cardName").value.trim();const d=deck();if(!n||!d)return;
   let x=S.cards.find(c=>c.name===n);if(!x){x={id:uid(),name:n,type:$("cardType").value,manual:true};S.cards.push(x)}
