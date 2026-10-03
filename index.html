@@ -557,8 +557,10 @@ function layoutJa(el){
   let lines=[t];
   if(wd(t)>W){const tk=jaTokens(t);lines=[];let i=0;
     while(i<tk.length){let w=0,j=i,best=-1,bp=0;
-      for(;j<tk.length;j++){w+=wd(tk[j].t);if(w>W)break;if(j===tk.length-1){best=j;bp=9;break}if(tk[j].p>=bp){bp=tk[j].p;best=j}}
-      if(best<i)best=i;lines.push(tk.slice(i,best+1).map(x=>x.t).join(""));i=best+1}}
+      // 行の幅の75%以上まで埋まる位置の中から優先度の高い所を選ぶ。短い行ができないように、それより手前では区切らない
+      let far=-1;
+      for(;j<tk.length;j++){w+=wd(tk[j].t);if(w>W)break;if(j===tk.length-1){best=j;bp=9;break}far=j;if(w>=W*.75&&tk[j].p>=bp){bp=tk[j].p;best=j}}
+      if(best<i)best=far>=i?far:i;lines.push(tk.slice(i,best+1).map(x=>x.t).join(""));i=best+1}}
   const key=lines.join("\n");if(el._lk===key&&el.childNodes.length===lines.length*2-1)return;
   el._lk=key;el.replaceChildren(...lines.flatMap((l,k)=>k?[document.createElement("br"),l]:[l]));
 }
