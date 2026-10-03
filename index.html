@@ -113,7 +113,7 @@ ul.list li:first-child{border-top:0}
 .cats .toggle{font-size:12px;padding:2px 9px}
 </style>
 <style>html{box-sizing:border-box;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);color-scheme:light}body{margin:0;font-size:14px;-webkit-text-size-adjust:100%}*,*::before,*::after{box-sizing:inherit}[hidden]{display:none!important}</style>
-<style>.yomi{display:block;font-size:10px;line-height:1.3;color:var(--muted);font-weight:400}.btn:disabled{opacity:.4;cursor:default}.hdr{flex-wrap:nowrap;gap:4px}.hdr .btn{white-space:nowrap;padding:3px 6px;flex:none;font-size:clamp(10px,3.1vw,12px)}.modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}.modal .panel{width:100%;max-width:420px;max-height:100%;overflow:auto}.modal .list{max-height:52vh;overflow:auto}.modal .have{color:var(--muted);font-size:12px;font-family:var(--f-num);white-space:nowrap}.modal .miss{color:var(--warn);font-size:13px;max-height:8em;overflow:auto;overflow-wrap:anywhere}</style>
+<style>.yomi{display:block;font-size:10px;line-height:1.3;color:var(--muted);font-weight:400}.btn:disabled{opacity:.4;cursor:default}.hdr{flex-wrap:nowrap;gap:4px}.hdr .btn{white-space:nowrap;padding:3px 6px;flex:none;font-size:clamp(10px,3.1vw,12px)}.modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}.modal .panel{width:100%;max-width:420px;max-height:100%;overflow:auto}.modal .list{max-height:52vh;overflow:auto}.modal .have{color:var(--muted);font-size:12px;font-family:var(--f-num);white-space:nowrap}.imgrow{flex-wrap:wrap!important}.imgrow .ocr{flex-basis:100%;font-size:11px;color:var(--muted)}.imgrow select{flex:1;min-width:0;height:30px;font-size:13px}.imgrow select.low{border-color:var(--warn);color:var(--warn)}.zonehead{font-weight:700;font-size:13px;color:var(--muted);padding-top:8px!important}.modal .miss{color:var(--warn);font-size:13px;max-height:8em;overflow:auto;overflow-wrap:anywhere}</style>
 </head>
 <body>
 
@@ -135,9 +135,12 @@ ul.list li:first-child{border-top:0}
         <input type="text" id="newDeckName" placeholder="デッキ名（例：レイズ・ムーン）" required>
         <button class="btn">作成</button>
       </form>
-      <div class="row">
-        <button type="button" class="btn ghost sm" id="pdfBtn">デッキリスト（PDF）から読み込む</button>
+      <div class="row" style="flex-wrap:nowrap">
+        <span class="sub" style="flex:1">デッキリストを読み込む</span>
+        <button type="button" class="btn ghost sm" id="pdfBtn">PDF</button>
+        <button type="button" class="btn ghost sm" id="imgBtn">画像</button>
         <input type="file" id="pdfFile" accept="application/pdf,.pdf" hidden>
+        <input type="file" id="imgFile" accept="image/*" hidden>
       </div>
     </div>
     <div class="panel grow">
@@ -286,6 +289,19 @@ ul.list li:first-child{border-top:0}
       <button type="button" class="btn sm" id="ownModalOk"></button>
     </div>
   </div>
+</div>
+
+<div class="modal" id="imgModal" hidden>
+  <form class="panel" id="imgForm" role="dialog" aria-modal="true" aria-labelledby="imgTitle">
+    <h2 id="imgTitle">画像から読み込み</h2>
+    <div class="sub" id="imgSum"></div>
+    <ul class="list" id="imgList"></ul>
+    <input type="text" id="imgName" placeholder="デッキ名を入力" required hidden>
+    <div class="row" style="justify-content:flex-end">
+      <button type="button" class="btn ghost sm" id="imgCancel">やめる</button>
+      <button class="btn sm" id="imgOk" hidden>登録する</button>
+    </div>
+  </form>
 </div>
 
 <div class="modal" id="pdfModal" hidden>
@@ -669,12 +685,125 @@ $("pdfFile").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!
 const closePdf=()=>{_pdf=null;$("pdfModal").hidden=true};
 $("pdfCancel").onclick=closePdf;
 $("pdfModal").onclick=e=>{if(e.target===$("pdfModal"))closePdf()};
-document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;if(!$("pdfModal").hidden)closePdf();if(!$("ownModal").hidden)closeOwnAdd()});
+document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;if(!$("imgModal").hidden)closeImg();if(!$("pdfModal").hidden)closePdf();if(!$("ownModal").hidden)closeOwnAdd()});
 $("pdfForm").onsubmit=e=>{e.preventDefault();const n=$("pdfName").value.trim();if(!n||!_pdf)return;
   const d={id:uid(),name:n,main:{},extra:{},side:{},inc:true};
   for(const z in _pdf)_pdf[z].forEach(c=>{let x=S.cards.find(y=>y.name===c.name);if(!x){x={id:uid(),name:c.name,type:c.t};if(c.manual)x.manual=true;S.cards.push(x)}
     const zk=z==="side"?"side":(x.type==="extra"?"extra":"main");d[zk][x.id]=Math.min(3,(d[zk][x.id]||0)+c.n)});
   S.decks.push(d);closePdf();okMsg=`「${n}」を読み込みました`;openDeck(d.id)};
+// デッキリストの画像（大会提出用の用紙を画像にしたもの）の読み込み
+// 1. 罫線を探して表のマス目を割り出す　2. マスごとに文字を読み取る（Tesseract.js、端末の中だけで動く）
+// 3. 読み取った文字をカード一覧の近い名前に寄せる　4. 確認画面で直してから登録する
+const absUrl=p=>new URL(p,location.href).href;
+function loadScript(src){return new Promise((ok,ng)=>{const e=document.createElement("script");e.src=src;e.onload=ok;e.onerror=ng;document.head.append(e)})}
+async function loadImage(f){const u=URL.createObjectURL(f);try{const im=new Image();im.src=u;await im.decode();return im}finally{setTimeout(()=>URL.revokeObjectURL(u),1000)}}
+// 罫線の位置を探す。gray は 0〜255 の明るさ、W×H
+function findGrid(g,W,H){
+  const dark=(x,y)=>g[y*W+x]<150;
+  // 横線：途切れずに続く暗い点の長さ（3点までの切れ目は許す）が幅の45%以上の行
+  const hl=[];for(let y=0;y<H;y++){let best=0,bs=0,run=0,st=0,gap=0;
+    for(let x=0;x<W;x++){if(dark(x,y)){if(!run)st=x;run+=1+gap;gap=0;if(run>best){best=run;bs=st}}else if(run&&gap<3)gap++;else{run=0;gap=0}}
+    if(best>=W*.45)hl.push({y,x0:bs,x1:bs+best})}
+  const merge=(a,key)=>{const o=[];a.forEach(v=>{const l=o[o.length-1];if(l&&v[key]-l.last<=3){l.last=v[key];l.items.push(v)}else o.push({first:v[key],last:v[key],items:[v]})});return o.map(c=>({...c.items[0],[key]:(c.first+c.last)/2}))};
+  const lines=merge(hl,"y");if(lines.length<10)return null;
+  // 上の表（モンスター・魔法・罠）は幅が広く、下の表（EX・サイド）は狭い
+  const wmax=Math.max(...lines.map(l=>l.x1-l.x0));
+  const top=lines.filter(l=>l.x1-l.x0>wmax*.85),bot=lines.filter(l=>l.x1-l.x0<=wmax*.85&&l.x1-l.x0>wmax*.5&&l.y>(top.length?top[top.length-1].y:0));
+  const vlines=(ys)=>{const y0=Math.round(ys[0]),y1=Math.round(ys[ys.length-1]),need=(y1-y0)*.8,xs=[];
+    for(let x=0;x<W;x++){let c=0;for(let y=y0;y<=y1;y++)if(dark(x,y))c++;if(c>=need)xs.push({x})}return merge(xs,"x").map(v=>v.x)};
+  const out={};
+  if(top.length>=5){const v=vlines(top.map(l=>l.y));if(v.length>=7)out.top={rows:top.map(l=>l.y),v:v.slice(0,7)}}
+  if(bot.length>=5){const v=vlines(bot.map(l=>l.y));if(v.length>=5)out.bot={rows:bot.map(l=>l.y),v:v.slice(0,5)}}
+  return out.top?out:null;
+}
+let OCRW=null;
+async function ocrWorker(onMsg){
+  if(!window.Tesseract)await loadScript("lib/ocr/tesseract.min.js");
+  if(!OCRW)OCRW=await Tesseract.createWorker("jpn",1,{workerPath:absUrl("lib/ocr/worker.min.js"),corePath:absUrl("lib/ocr/"),langPath:absUrl("lib/ocr"),gzip:true,cacheMethod:"none",workerBlobURL:false,logger:m=>onMsg&&onMsg(m)});
+  return OCRW;
+}
+// マスを切り出して拡大・白黒にしたキャンバスを作る。文字がなければ null
+function cellCanvas(src,g,W,x0,y0,x1,y1){
+  const pad=3;x0=Math.round(x0+pad);y0=Math.round(y0+pad);x1=Math.round(x1-pad);y1=Math.round(y1-pad);const w=x1-x0,h=y1-y0;if(w<4||h<4)return null;
+  let ink=0;for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++)if(g[y*W+x]<150)ink++;if(ink<w*h*.004)return null;
+  const k=Math.max(1,Math.min(4,75/h));const c=document.createElement("canvas");c.width=Math.round(w*k)+20;c.height=Math.round(h*k)+20;
+  const cx=c.getContext("2d");cx.fillStyle="#fff";cx.fillRect(0,0,c.width,c.height);cx.imageSmoothingQuality="high";cx.drawImage(src,x0,y0,w,h,10,10,w*k,h*k);
+  const d=cx.getImageData(0,0,c.width,c.height),p=d.data;for(let i=0;i<p.length;i+=4){const v=(p[i]*.3+p[i+1]*.59+p[i+2]*.11)<130?0:255;p[i]=p[i+1]=p[i+2]=v}cx.putImageData(d,0,0);return c;
+}
+// 読み取った文字に近いカードを探す（2文字ずつの組の一致度）
+const fz=s=>s.normalize("NFKC").toLowerCase().replace(/[\s・･\-－‐ー『』「」&＆.．,，、。'’"“”★☆]/g,"");
+const bigr=s=>{const m=new Map(),t=" "+s+" ";for(let i=0;i<t.length-1;i++){const k=t.slice(i,i+2);m.set(k,(m.get(k)||0)+1)}m.n=t.length-1;return m};
+const unig=s=>{const m=new Map();for(const ch of s)m.set(ch,(m.get(ch)||0)+1);m.n=[...s].length;return m};
+const dice=(a,b)=>{let c=0;for(const [k,v] of a)if(b.has(k))c+=Math.min(v,b.get(k));return a.n+b.n?2*c/(a.n+b.n):0};
+let _fzDB=null;
+// 2文字ずつの組と1文字ずつの一致度を半々に使う（1文字だけ読み違えたときにも当たりやすくする）
+function fuzzyCards(text,type){if(!_fzDB||_fzDB.length!==DB.length)_fzDB=DB.map(x=>{const f=fz(x.n);return {n:x.n,t:TMAP[x.t],g:bigr(f),u:unig(f)}});
+  const f=fz(text);if(!f)return [];const q=bigr(f),qu=unig(f);
+  return _fzDB.filter(x=>!type||x.t===type).map(x=>({n:x.n,t:x.t,s:(dice(q,x.g)+dice(qu,x.u))/2})).sort((a,b)=>b.s-a.s).slice(0,5)}
+async function readSheetImage(f,prog){
+  const im=await loadImage(f);const sc=Math.min(1,2000/im.naturalWidth);const W=Math.round(im.naturalWidth*sc),H=Math.round(im.naturalHeight*sc);
+  const c=document.createElement("canvas");c.width=W;c.height=H;const cx=c.getContext("2d",{willReadFrequently:true});cx.fillStyle="#fff";cx.fillRect(0,0,W,H);cx.drawImage(im,0,0,W,H);
+  const p=cx.getImageData(0,0,W,H).data,g=new Uint8Array(W*H);for(let i=0;i<W*H;i++)g[i]=p[i*4]*.3+p[i*4+1]*.59+p[i*4+2]*.11;
+  const grid=findGrid(g,W,H);if(!grid)return null;
+  // 読み取るマスの一覧：[ゾーン, 種類, 名前のマス, 枚数のマス]。表の1行目は見出し、最後の行は合計なので飛ばす
+  const cells=[];
+  const add=(t,zones)=>{const r=t.rows;for(let i=1;i<r.length-2;i++)zones.forEach(([z,ty,a,b,c2])=>cells.push({z,ty,name:[t.v[a],r[i],t.v[b],r[i+1]],num:[t.v[b],r[i],t.v[c2],r[i+1]]}))};
+  add(grid.top,[["main","monster",0,1,2],["main","spell",2,3,4],["main","trap",4,5,6]]);
+  if(grid.bot)add(grid.bot,[["extra","extra",0,1,2],["side",null,2,3,4]]);
+  // 表示は列ごと（モンスター → 魔法 → 罠）の順にする
+  const ord={monster:0,spell:1,trap:2,extra:3,null:4};cells.sort((a,b)=>ord[a.ty]-ord[b.ty]);
+  const jobs=cells.map(x=>({...x,nc:cellCanvas(c,g,W,...x.name)})).filter(x=>x.nc);
+  if(!jobs.length)return null;
+  prog(`読み取りの準備をしています…（初回は部品の取得に時間がかかります）`);
+  const w=await ocrWorker();const out={main:[],extra:[],side:[]};let k=0;
+  for(const j of jobs){prog(`読み取り中… ${++k}／${jobs.length}`);
+    await w.setParameters({tessedit_pageseg_mode:"6",tessedit_char_whitelist:""});
+    let t=(await w.recognize(j.nc)).data.text.replace(/\s+/g,"").trim();
+    if(!fz(t)){await w.setParameters({tessedit_pageseg_mode:"7"});t=(await w.recognize(j.nc)).data.text.replace(/\s+/g,"").trim()} // 読めなかったら1行として読み直す
+    if(!fz(t))continue; // 罫線のかすれなどで文字がなかったマスは飛ばす
+    let n=1;const ncv=cellCanvas(c,g,W,...j.num);
+    if(ncv){await w.setParameters({tessedit_pageseg_mode:"7",tessedit_char_whitelist:"0123456789"});const d=(await w.recognize(ncv)).data.text.replace(/\D/g,"");if(d)n=Math.max(1,Math.min(3,+d[0]))}
+    const cands=fuzzyCards(t,j.ty);out[j.z].push({ocr:t,n,t:j.ty,cands,pick:cands[0]&&cands[0].s>=.35?0:-1});
+  }
+  return out;
+}
+let _img=null;
+const closeImg=()=>{_img=null;$("imgModal").hidden=true};
+function renderImg(){const ul=$("imgList");ul.innerHTML="";
+  [["main","メイン"],["extra","EX"],["side","サイド"]].forEach(([z,lab])=>{const a=_img[z];if(!a.length)return;
+    const h=document.createElement("li");h.className="zonehead";h.textContent=`${lab}（${a.reduce((s,c)=>s+(c.pick>=0?c.n:0),0)}枚）`;ul.append(h);
+    a.forEach(c=>{const l=document.createElement("li");l.className="imgrow";
+      const o=document.createElement("span");o.className="ocr";o.textContent=`読み取り：${c.ocr||"（読めませんでした）"}`;
+      const sel=document.createElement("select");sel.setAttribute("aria-label","登録するカード");
+      c.cands.forEach((x,i)=>{const op=document.createElement("option");op.value=i;op.textContent=x.n;sel.append(op)});
+      const no=document.createElement("option");no.value=-1;no.textContent="（登録しない）";sel.append(no);
+      const sr=document.createElement("option");sr.value=-2;sr.textContent="（検索して選ぶ…）";sel.append(sr);sel.value=c.pick;
+      if(!c.ok&&(c.pick<0||c.cands[c.pick].s<.6))sel.classList.add("low");
+      sel.onchange=()=>{if(+sel.value===-2){c.searching=true}else{c.pick=+sel.value;c.ok=true;c.searching=false}renderImg()};
+      l.append(o,sel,qty(c.n,dv=>{c.n=Math.max(1,Math.min(3,c.n+dv));renderImg()}));
+      if(c.searching){const box=document.createElement("span");box.style.cssText="flex-basis:100%;display:flex;flex-direction:column;gap:4px";
+        const inp=document.createElement("input");inp.type="search";inp.placeholder="カード名か読み仮名";const res=document.createElement("span");res.className="row";res.style.gap="4px";
+        inp.oninput=()=>{res.innerHTML="";search(inp.value,c.t||"").slice(0,6).forEach(x=>{const b=document.createElement("button");b.type="button";b.className="btn ghost sm";b.textContent=x.name;
+          b.onclick=()=>{c.cands=[{n:x.name,t:x.type,s:1},...c.cands.filter(y=>y.n!==x.name)].slice(0,5);c.pick=0;c.ok=true;c.searching=false;renderImg()};res.append(b)})};
+        box.append(inp,res);l.append(box);setTimeout(()=>{noZoom(inp);inp.focus()},0)}
+      ul.append(l)})});
+}
+$("imgBtn").onclick=()=>$("imgFile").click();
+$("imgFile").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
+  $("imgTitle").textContent="画像から読み込み";$("imgList").innerHTML="";$("imgName").hidden=true;$("imgOk").hidden=true;$("imgModal").hidden=false;
+  const prog=t=>{$("imgSum").textContent=t};prog("画像を調べています…");
+  let r=null;try{r=await readSheetImage(f,prog)}catch(err){closeImg();toast("画像を読み込めませんでした","ネットにつながった状態で、もう一度お試しください（初回は読み取りの部品を取得します）。");return}
+  if($("imgModal").hidden)return; // 途中でやめた
+  if(!r){closeImg();toast("デッキリストを見つけられませんでした","大会提出用のデッキリストの画像を、表全体が入るように選んでください。");return}
+  _img=r;const low=Object.values(r).flat().filter(c=>c.pick<0||c.cands[c.pick].s<.6).length;
+  prog(`読み取った結果です。赤い欄は自信が低いので、正しいカードを選び直してください${low?`（${low}か所）`:""}。`);
+  renderImg();$("imgName").value="";$("imgName").hidden=false;$("imgOk").hidden=false};
+$("imgCancel").onclick=closeImg;
+$("imgForm").onsubmit=e=>{e.preventDefault();const n=$("imgName").value.trim();if(!n||!_img)return;
+  const d={id:uid(),name:n,main:{},extra:{},side:{},inc:true};
+  for(const z in _img)_img[z].forEach(c=>{if(c.pick<0)return;const x0=c.cands[c.pick];let x=S.cards.find(y=>y.name===x0.n);if(!x){x={id:uid(),name:x0.n,type:x0.t};S.cards.push(x)}
+    const zk=z==="side"?"side":(x.type==="extra"?"extra":"main");d[zk][x.id]=Math.min(3,(d[zk][x.id]||0)+c.n)});
+  S.decks.push(d);closeImg();okMsg=`「${n}」を読み込みました`;openDeck(d.id)};
 // バックアップ
 const todayStr=()=>{const d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")};
 $("expBtn").onclick=()=>{try{const b=new Blob([JSON.stringify({app:"deckkobo",v:1,data:S},null,1)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=`deckkobo-${todayStr()}.json`;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast("書き出しました",null,"ok")}catch(e){toast("書き出せませんでした","もう一度お試しください。")}};
