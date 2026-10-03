@@ -155,6 +155,18 @@ ul.list li:first-child{border-top:0}
         <button class="btn del sm" id="delDeck">削除</button>
       </div>
       <div class="decktitle" id="deckTitle"></div>
+      <div class="row" id="ownRow" style="flex-wrap:nowrap">
+        <span class="sub" style="flex:1">このデッキのカードを所持に</span>
+        <button class="btn ghost sm" id="ownAll">すべて登録</button>
+        <button class="btn del sm" id="ownSub">差し引く</button>
+      </div>
+      <div class="row" id="ownConfRow" hidden style="flex-wrap:nowrap;justify-content:space-between">
+        <span style="font-size:14px" id="ownConfMsg"></span>
+        <span class="row" style="flex:none;flex-wrap:nowrap;gap:6px">
+          <button class="btn ghost sm" id="ownCancel">やめる</button>
+          <button class="btn sm" id="ownOk">実行</button>
+        </span>
+      </div>
       <div class="row" id="renameRow" hidden>
         <input type="text" id="renameInput" placeholder="デッキ名">
         <button class="btn" id="renameOk">保存</button>
@@ -394,7 +406,7 @@ const sortIds=ids=>ids.sort((x,y)=>cmp(card(x),card(y)));
 function goTab(t){document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===t));["decks","short","owned","opt"].forEach(k=>$("tab-"+k).hidden=k!==t)}
 const inc=d=>d.inc!==false;
 const cnt=d=>["main","extra","side"].map(z=>Object.values(d[z]).reduce((a,b)=>a+b,0));
-function openDeck(id){S.cur=id;view="edit";curZone="main";$("addFilter").value="";save();renderDecks();window.scrollTo(0,0)}
+function openDeck(id){ownClose();S.cur=id;view="edit";curZone="main";$("addFilter").value="";save();renderDecks();window.scrollTo(0,0)}
 function incBtn(d,onDone){const b=document.createElement("button");b.className="toggle";b.setAttribute("aria-pressed",inc(d));b.textContent=inc(d)?"集計に含める":"集計から除外";b.onclick=()=>{d.inc=!inc(d);save();onDone()};return b}
 function renderDeckList(){
   const ul=$("deckList");ul.innerHTML="";$("deckCount").textContent=S.decks.length+"個";
@@ -451,9 +463,23 @@ $("cardForm").onsubmit=e=>{e.preventDefault();const n=$("cardName").value.trim()
 $("addZone").onchange=renderDecks;
 $("newDeckForm").onsubmit=e=>{e.preventDefault();const n=$("newDeckName").value.trim();if(!n)return;
   const d={id:uid(),name:n,main:{},extra:{},side:{},inc:true};S.decks.push(d);$("newDeckName").value="";okMsg=`「${n}」を保存しました`;openDeck(d.id)};
-$("backToList").onclick=()=>{view="list";$("renameRow").hidden=true;$("delRow").hidden=true;renderDecks()};
+$("backToList").onclick=()=>{view="list";ownClose();$("renameRow").hidden=true;$("delRow").hidden=true;renderDecks()};
 $("renameDeck").onclick=()=>{$("renameRow").hidden=false;$("renameInput").value=deck()?.name||"";noZoom($("renameInput"));$("renameInput").focus()};
 $("renameOk").onclick=()=>{const v=$("renameInput").value.trim();let m=null;if(v&&deck()&&deck().name!==v){deck().name=v;m=`デッキ名を「${v}」に変更しました`}$("renameRow").hidden=true;save(m);renderDecks()};
+// デッキのカードを所持にまとめて登録／差し引く。枚数はメイン・EX・サイドの合計
+const deckNeed=d=>{const need={};["main","extra","side"].forEach(zk=>Object.entries(d[zk]).forEach(([i,n])=>{if(card(i))need[i]=(need[i]||0)+n}));return need};
+var _own=null;
+const ownConf=(mode,msg)=>{_own=mode;$("ownConfMsg").textContent=msg;$("ownOk").className="btn sm"+(mode==="sub"?" del":"");$("ownConfRow").hidden=false;$("ownRow").hidden=true};
+function ownClose(){_own=null;$("ownConfRow").hidden=true;$("ownRow").hidden=false}
+$("ownAll").onclick=()=>ownConf("add","足りない分を増やして、すべて所持にしますか？");
+$("ownSub").onclick=()=>ownConf("sub","このデッキの枚数分を所持から減らしますか？");
+$("ownCancel").onclick=ownClose;
+$("ownOk").onclick=()=>{const d=deck();if(!d||!_own)return;const need=deckNeed(d);let k=0;
+  Object.entries(need).forEach(([i,n])=>{const o=S.owned[i]||0;
+    if(_own==="add"){if(o<n){S.owned[i]=n;k+=n-o}}
+    else if(o>0){const v=Math.max(0,o-n);k+=o-v;if(v)S.owned[i]=v;else delete S.owned[i]}});
+  const m=_own==="add"?(k?`所持を${k}枚増やしました`:"すべて所持済みです"):(k?`所持から${k}枚減らしました`:"減らす所持カードはありません");
+  ownClose();gc();save(m);renderDecks()};
 $("delDeck").onclick=()=>{$("delRow").hidden=false};
 $("delCancel").onclick=()=>{$("delRow").hidden=true};
 $("delOk").onclick=()=>{const dn=deck()?.name;okMsg=`「${dn}」を削除しました`;S.decks=S.decks.filter(d=>d.id!==S.cur);S.cur=S.decks[0]?.id;$("delRow").hidden=true;view="list";gc();save();renderDecks()};
