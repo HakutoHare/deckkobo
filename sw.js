@@ -1,5 +1,5 @@
 // デッキ工房 オフライン用。更新時は VERSION を上げる
-const VERSION="1.6.0";
+const VERSION="1.7.0";
 const CACHE="deckkobo-"+VERSION;
 const FILES=["./","index.html","cardlist.json","manifest.webmanifest","icon-192.png","icon-512.png","apple-touch-icon.png","lib/pdf.min.mjs","lib/pdf.worker.min.mjs","lib/cmaps/UniJIS-UCS2-H.bcmap","lib/cmaps/Adobe-Japan1-UCS2.bcmap"];
 // 保存するときは、ブラウザや配信元に残っている古いファイルを使わず、必ず最新を取り直す
