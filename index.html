@@ -157,13 +157,6 @@ ul.list li:first-child{border-top:0}
         <button class="btn del sm" id="delDeck">削除</button>
       </div>
       <div class="decktitle" id="deckTitle"></div>
-      <div class="row" id="ownConfRow" hidden style="flex-wrap:nowrap;justify-content:space-between">
-        <span style="font-size:14px" id="ownConfMsg"></span>
-        <span class="row" style="flex:none;flex-wrap:nowrap;gap:6px">
-          <button class="btn ghost sm" id="ownCancel">やめる</button>
-          <button class="btn sm" id="ownOk">実行</button>
-        </span>
-      </div>
       <div class="row" id="renameRow" hidden>
         <input type="text" id="renameInput" placeholder="デッキ名">
         <button class="btn" id="renameOk">保存</button>
@@ -270,7 +263,7 @@ ul.list li:first-child{border-top:0}
 
 <div class="modal" id="ownModal" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="ownModalTitle">
-    <h2 id="ownModalTitle">所持に追加</h2>
+    <h2 id="ownModalTitle"></h2>
     <div class="sub" id="ownModalRule"></div>
     <div class="row" style="flex-wrap:nowrap;gap:6px">
       <button type="button" class="btn ghost sm" id="ownModalAll">すべて初期値</button>
@@ -280,7 +273,7 @@ ul.list li:first-child{border-top:0}
     <div class="row" style="flex-wrap:nowrap">
       <span class="count" id="ownModalTot" style="flex:1"></span>
       <button type="button" class="btn ghost sm" id="ownModalCancel">やめる</button>
-      <button type="button" class="btn sm" id="ownModalOk">追加する</button>
+      <button type="button" class="btn sm" id="ownModalOk"></button>
     </div>
   </div>
 </div>
@@ -420,7 +413,7 @@ const sortIds=ids=>ids.sort((x,y)=>cmp(card(x),card(y)));
 function goTab(t){document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===t));["decks","short","owned","opt"].forEach(k=>$("tab-"+k).hidden=k!==t)}
 const inc=d=>d.inc!==false;
 const cnt=d=>["main","extra","side"].map(z=>Object.values(d[z]).reduce((a,b)=>a+b,0));
-function openDeck(id){ownClose();S.cur=id;view="edit";curZone="main";$("addFilter").value="";save();renderDecks();window.scrollTo(0,0)}
+function openDeck(id){S.cur=id;view="edit";curZone="main";$("addFilter").value="";save();renderDecks();window.scrollTo(0,0)}
 function incBtn(d,onDone){const b=document.createElement("button");b.className="toggle";b.setAttribute("aria-pressed",inc(d));b.textContent=inc(d)?"集計に含める":"集計から除外";b.onclick=()=>{d.inc=!inc(d);save();onDone()};return b}
 function renderDeckList(){
   const ul=$("deckList");ul.innerHTML="";$("deckCount").textContent=S.decks.length+"個";
@@ -477,42 +470,39 @@ $("cardForm").onsubmit=e=>{e.preventDefault();const n=$("cardName").value.trim()
 $("addZone").onchange=renderDecks;
 $("newDeckForm").onsubmit=e=>{e.preventDefault();const n=$("newDeckName").value.trim();if(!n)return;
   const d={id:uid(),name:n,main:{},extra:{},side:{},inc:true};S.decks.push(d);$("newDeckName").value="";okMsg=`「${n}」を保存しました`;openDeck(d.id)};
-$("backToList").onclick=()=>{view="list";ownClose();$("renameRow").hidden=true;$("delRow").hidden=true;renderDecks()};
+$("backToList").onclick=()=>{view="list";$("renameRow").hidden=true;$("delRow").hidden=true;renderDecks()};
 $("renameDeck").onclick=()=>{$("renameRow").hidden=false;$("renameInput").value=deck()?.name||"";noZoom($("renameInput"));$("renameInput").focus()};
 $("renameOk").onclick=()=>{const v=$("renameInput").value.trim();let m=null;if(v&&deck()&&deck().name!==v){deck().name=v;m=`デッキ名を「${v}」に変更しました`}$("renameRow").hidden=true;save(m);renderDecks()};
 // デッキのカードを所持にまとめて登録／差し引く。枚数はメイン・EX・サイドの合計
 const deckNeed=d=>{const need={};["main","extra","side"].forEach(zk=>Object.entries(d[zk]).forEach(([i,n])=>{if(card(i))need[i]=(need[i]||0)+n}));return need};
-var _own=null;
-const ownConf=(mode,msg)=>{_own=mode;$("ownConfMsg").textContent=msg;$("ownOk").className="btn sm"+(mode==="sub"?" del":"");$("ownConfRow").hidden=false};
-function ownClose(){_own=null;$("ownConfRow").hidden=true}
-// 所持追加：カードごとに追加する枚数を選ぶ。初期値は設定の「デッキ間でカードを使い回す」に合わせる
-//   使い回す → 足りない分だけ／使い回さない → デッキの枚数をそのまま
-let _add=null,_addDef=null;
-function openOwnAdd(){const d=deck();if(!d)return;const need=deckNeed(d);const ids=sortIds(Object.keys(need));
-  if(!ids.length){toast("このデッキにはカードがありません",null,"ok");return}
-  _addDef={};ids.forEach(i=>{_addDef[i]=reuse()?Math.max(0,need[i]-(S.owned[i]||0)):need[i]});_add={..._addDef};
-  $("ownModalRule").textContent=reuse()?"「デッキ間でカードを使い回す」がオンなので、足りない分だけを初期値にしています。":"「デッキ間でカードを使い回す」がオフなので、デッキの枚数をそのまま初期値にしています。";
+// 所持追加／所持削除：カードごとに枚数を選ぶウィンドウ
+//   追加の初期値は設定の「デッキ間でカードを使い回す」に合わせる（使い回す → 足りない分だけ／使い回さない → デッキの枚数をそのまま）
+//   削除の初期値はデッキで使う枚数（所持している枚数まで）。所持していないカードは出さない
+let _add=null,_addDef=null,_addMax=null,_ownMode="add";
+function openOwnAdd(mode){const d=deck();if(!d)return;_ownMode=mode;const need=deckNeed(d),sub=mode==="sub";
+  const ids=sortIds(Object.keys(need).filter(i=>!sub||(S.owned[i]||0)>0));
+  if(!ids.length){toast(sub?"このデッキのカードは所持していません":"このデッキにはカードがありません",null,"ok");return}
+  _addDef={};_addMax={};ids.forEach(i=>{const o=S.owned[i]||0;_addMax[i]=sub?o:9;_addDef[i]=sub?Math.min(need[i],o):reuse()?Math.max(0,need[i]-o):need[i]});_add={..._addDef};
+  $("ownModalTitle").textContent=sub?"所持から削除":"所持に追加";
+  $("ownModalRule").textContent=sub?"デッキで使う枚数を初期値にしています（所持している枚数まで）。":reuse()?"「デッキ間でカードを使い回す」がオンなので、足りない分だけを初期値にしています。":"「デッキ間でカードを使い回す」がオフなので、デッキの枚数をそのまま初期値にしています。";
+  $("ownModalOk").textContent=sub?"削除する":"追加する";$("ownModalOk").className="btn sm"+(sub?" del":"");
   renderOwnAdd();$("ownModalList").scrollTop=0;$("ownModal").hidden=false}
 function renderOwnAdd(){const ul=$("ownModalList"),top=ul.scrollTop;ul.innerHTML="";const need=deckNeed(deck());
   grouped(ul,Object.keys(_add).map(card),c=>need[c.id],c=>{const i=c.id;const w=document.createElement("span");w.className="row";w.style.cssText="flex:none;flex-wrap:nowrap;gap:6px";
     const h=document.createElement("span");h.className="have";h.textContent=`所持${S.owned[i]||0}`;
-    w.append(h,qty(_add[i],dv=>{_add[i]=Math.max(0,Math.min(9,_add[i]+dv));renderOwnAdd()}));return li(c,w)});
+    w.append(h,qty(_add[i],dv=>{_add[i]=Math.max(0,Math.min(_addMax[i],_add[i]+dv));renderOwnAdd()}));return li(c,w)});
   ul.scrollTop=top;const t=Object.values(_add).reduce((a,b)=>a+b,0);$("ownModalTot").textContent=`合計${t}枚`;$("ownModalOk").disabled=!t}
 const closeOwnAdd=()=>{_add=null;$("ownModal").hidden=true};
-$("ownAll").onclick=openOwnAdd;
+$("ownAll").onclick=()=>openOwnAdd("add");
+$("ownSub").onclick=()=>openOwnAdd("sub");
 $("ownModalAll").onclick=()=>{_add={..._addDef};renderOwnAdd()};
 $("ownModalNone").onclick=()=>{for(const i in _add)_add[i]=0;renderOwnAdd()};
 $("ownModalCancel").onclick=closeOwnAdd;
 $("ownModal").onclick=e=>{if(e.target===$("ownModal"))closeOwnAdd()};
-$("ownModalOk").onclick=()=>{if(!_add)return;let k=0;for(const i in _add){const n=_add[i];if(n>0&&card(i)){S.owned[i]=(S.owned[i]||0)+n;k+=n}}
-  closeOwnAdd();save(k?`所持に${k}枚追加しました`:null);renderDecks()};
-$("ownSub").onclick=()=>ownConf("sub","このデッキで使う枚数分を、所持から減らしますか？");
-$("ownCancel").onclick=ownClose;
-$("ownOk").onclick=()=>{const d=deck();if(!d||!_own)return;const need=deckNeed(d);let k=0;
-  Object.entries(need).forEach(([i,n])=>{const o=S.owned[i]||0;
-    if(o>0){const v=Math.max(0,o-n);k+=o-v;if(v)S.owned[i]=v;else delete S.owned[i]}});
-  const m=k?`所持から${k}枚減らしました`:"減らす所持カードはありません";
-  ownClose();gc();save(m);renderDecks()};
+$("ownModalOk").onclick=()=>{if(!_add)return;let k=0;const sub=_ownMode==="sub";
+  for(const i in _add){const n=_add[i];if(n<=0||!card(i))continue;const o=S.owned[i]||0;
+    if(sub){const v=Math.max(0,o-n);k+=o-v;if(v)S.owned[i]=v;else delete S.owned[i]}else{S.owned[i]=o+n;k+=n}}
+  closeOwnAdd();if(sub)gc();save(k?(sub?`所持から${k}枚削除しました`:`所持に${k}枚追加しました`):null);renderDecks()};
 $("delDeck").onclick=()=>{$("delRow").hidden=false};
 $("delCancel").onclick=()=>{$("delRow").hidden=true};
 $("delOk").onclick=()=>{const dn=deck()?.name;okMsg=`「${dn}」を削除しました`;S.decks=S.decks.filter(d=>d.id!==S.cur);S.cur=S.decks[0]?.id;$("delRow").hidden=true;view="list";gc();save();renderDecks()};
