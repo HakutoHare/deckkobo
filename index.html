@@ -113,6 +113,7 @@ ul.list li:first-child{border-top:0}
 .cats .toggle{font-size:12px;padding:2px 9px}
 </style>
 <style>html{box-sizing:border-box;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);color-scheme:light}body{margin:0;font-size:14px;-webkit-text-size-adjust:100%}*,*::before,*::after{box-sizing:inherit}[hidden]{display:none!important}</style>
+<style>.modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}.modal .panel{width:100%;max-width:420px;max-height:100%;overflow:auto}.modal .miss{color:var(--warn);font-size:13px;max-height:8em;overflow:auto;overflow-wrap:anywhere}</style>
 </head>
 <body>
 
@@ -134,6 +135,10 @@ ul.list li:first-child{border-top:0}
         <input type="text" id="newDeckName" placeholder="デッキ名（例：レイズ・ムーン）" required>
         <button class="btn">作成</button>
       </form>
+      <div class="row">
+        <button type="button" class="btn ghost sm" id="pdfBtn">デッキリスト（PDF）から読み込む</button>
+        <input type="file" id="pdfFile" accept="application/pdf,.pdf" hidden>
+      </div>
     </div>
     <div class="panel grow">
       <h2>デッキ一覧 <span class="count" id="deckCount"></span></h2>
@@ -252,6 +257,19 @@ ul.list li:first-child{border-top:0}
       <ul class="list" id="ownedList"></ul>
     </div>
   </section>
+</div>
+
+<div class="modal" id="pdfModal" hidden>
+  <form class="panel" id="pdfForm" role="dialog" aria-modal="true" aria-labelledby="pdfTitle">
+    <h2 id="pdfTitle">デッキリストを読み込み</h2>
+    <div class="sub" id="pdfSum"></div>
+    <input type="text" id="pdfName" placeholder="デッキ名を入力" required>
+    <div class="miss" id="pdfMiss" hidden></div>
+    <div class="row" style="justify-content:flex-end">
+      <button type="button" class="btn ghost sm" id="pdfCancel">やめる</button>
+      <button class="btn sm">登録する</button>
+    </div>
+  </form>
 </div>
 
 <script>
@@ -504,6 +522,60 @@ relayout();
 // バージョン表示（sw.js の VERSION を正とする）
 fetch("sw.js").then(r=>r.text()).then(t=>{const m=t.match(/VERSION="([^"]+)"/);$("appVer").textContent=m?m[1]:"不明"}).catch(()=>{$("appVer").textContent="不明"});
 const DATA_DATE="2026年9月24日時点";
+// デッキリスト（PDF）の読み込み。ニューロンが出力する大会提出用の用紙の形に合わせている
+// PDF の文字と位置から、ゾーンごとの{name,n,t}を取り出す。「枚数」の見出しの位置で列を分ける
+function parseSheet(items){
+  items=items.map(i=>({s:i.s.trim(),x:i.x,y:i.y})).filter(i=>i.s);
+  const hd=items.filter(i=>i.s==="枚数"),ext=items.find(i=>i.s==="エクストラデッキ");
+  if(!ext)return null;
+  const top=hd.filter(i=>i.y>ext.y+5).sort((a,b)=>a.x-b.x),bot=hd.filter(i=>Math.abs(i.y-ext.y)<5).sort((a,b)=>a.x-b.x);
+  if(top.length!==3||bot.length!==2)return null;
+  const cols=[...top.map((h,i)=>({h,z:"main",t:["monster","spell","trap"][i],y0:ext.y,y1:top[0].y})),...bot.map((h,i)=>({h,z:["extra","side"][i],t:i?null:"extra",y0:-1,y1:ext.y}))];
+  const out={main:[],extra:[],side:[]};
+  cols.forEach(c=>{
+    const sib=cols.filter(o=>o.y1===c.y1&&o.h.x<c.h.x).sort((a,b)=>b.h.x-a.h.x)[0];
+    const x0=sib?sib.h.x+12:0,x1=c.h.x+12;
+    const inCol=items.filter(it=>it.x>=x0&&it.x<x1&&it.y<c.y1-3&&it.y>c.y0+3&&!it.s.includes("合計"));
+    const nums=inCol.filter(it=>/^\d+$/.test(it.s)&&Math.abs(it.x-c.h.x)<20);
+    inCol.filter(it=>!/^[\d\s/]+$/.test(it.s)).forEach(n=>{
+      const q=nums.filter(m=>Math.abs(m.y-n.y)<8).sort((a,b)=>Math.abs(a.y-n.y)-Math.abs(b.y-n.y))[0];
+      out[c.z].push({name:n.s,n:q?+q.s:1,t:c.t});
+    });
+  });
+  return out;
+}
+let PDFJS=null,_pdf=null;
+async function readPdf(f){
+  if(!PDFJS){PDFJS=await import("./lib/pdf.min.mjs");PDFJS.GlobalWorkerOptions.workerSrc=new URL("lib/pdf.worker.min.mjs",location.href).href}
+  const doc=await PDFJS.getDocument({data:new Uint8Array(await f.arrayBuffer()),cMapUrl:new URL("lib/cmaps/",location.href).href,cMapPacked:true,verbosity:0}).promise;
+  const tc=await (await doc.getPage(1)).getTextContent();doc.destroy();
+  return parseSheet(tc.items.map(i=>({s:i.str,x:i.transform[4],y:i.transform[5]})));
+}
+// 表記ゆれ（全角半角・★☆・’）を無視してカード一覧と照合する
+const nkey=s=>norm(s).replace(/[★☆’'＇"“”＂]/g,"");
+let _nk=null;
+const lookup=n=>{if(!_nk||_nk.size!==DB.length){_nk=new Map();DB.forEach(x=>_nk.set(nkey(x.n),x))}return _nk.get(nkey(n))};
+$("pdfBtn").onclick=()=>$("pdfFile").click();
+$("pdfFile").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
+  let r=null;
+  try{r=await readPdf(f)}catch(err){toast("PDFを読み込めませんでした","ネットにつながった状態で一度アプリを開き直してから、もう一度お試しください。");return}
+  const tot=r?Object.values(r).reduce((a,z)=>a+z.length,0):0;
+  if(!tot){toast("デッキを読み取れませんでした","ニューロンで出力したデッキリストのPDFを選んでください。");return}
+  const miss=[];
+  for(const z in r)r[z].forEach(c=>{const x=lookup(c.name);if(x){c.name=x.n;c.t=TMAP[x.t]}else{c.manual=true;c.t=c.t||"monster";if(!miss.includes(c.name))miss.push(c.name)}});
+  _pdf=r;const cnt=z=>r[z].reduce((a,c)=>a+c.n,0);
+  $("pdfSum").textContent=`メイン${cnt("main")}枚・EX${cnt("extra")}枚・サイド${cnt("side")}枚を読み取りました。デッキ名を決めて登録してください。`;
+  $("pdfMiss").hidden=!miss.length;$("pdfMiss").textContent=`カード一覧にない${miss.length}種は、手入力のカードとして登録します：${miss.join("、")}`;
+  $("pdfName").value="";$("pdfModal").hidden=false;fitInput($("pdfName"));noZoom($("pdfName"));$("pdfName").focus()};
+const closePdf=()=>{_pdf=null;$("pdfModal").hidden=true};
+$("pdfCancel").onclick=closePdf;
+$("pdfModal").onclick=e=>{if(e.target===$("pdfModal"))closePdf()};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("pdfModal").hidden)closePdf()});
+$("pdfForm").onsubmit=e=>{e.preventDefault();const n=$("pdfName").value.trim();if(!n||!_pdf)return;
+  const d={id:uid(),name:n,main:{},extra:{},side:{},inc:true};
+  for(const z in _pdf)_pdf[z].forEach(c=>{let x=S.cards.find(y=>y.name===c.name);if(!x){x={id:uid(),name:c.name,type:c.t};if(c.manual)x.manual=true;S.cards.push(x)}
+    const zk=z==="side"?"side":(x.type==="extra"?"extra":"main");d[zk][x.id]=Math.min(3,(d[zk][x.id]||0)+c.n)});
+  S.decks.push(d);closePdf();okMsg=`「${n}」を読み込みました`;openDeck(d.id)};
 // バックアップ
 const todayStr=()=>{const d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")};
 $("expBtn").onclick=()=>{try{const b=new Blob([JSON.stringify({app:"deckkobo",v:1,data:S},null,1)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=`deckkobo-${todayStr()}.json`;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast("書き出しました",null,"ok")}catch(e){toast("書き出せませんでした","もう一度お試しください。")}};
