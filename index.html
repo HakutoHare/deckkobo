@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>デッキ工房</title>
+<meta name="theme-color" content="#3b3a8f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="デッキ工房">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+/* 上部タブで3画面切替（カード登録 / デッキ / 所持リスト）、一列構成 */
+:root{
+  --bg:#f3f2f7;--panel:#ffffff;--fg:#1d1b2a;--muted:#6b6880;--line:#dcd9e6;
+  --accent:#3b3a8f;--accent-fg:#fff;--gold:#a57a12;--warn:#b3261e;--ok:#2e7d4f;
+  --monster:#b06a1f;--spell:#1f7a6b;--trap:#9c2f6b;--extra:#4b4b9e;
+  --f-body:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Noto Sans CJK JP","Yu Gothic UI",Meiryo,system-ui,sans-serif;--f-num:ui-monospace,"SF Mono",Menlo,"Roboto Mono",monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#15141d;--panel:#1f1e2a;--fg:#ebe9f5;--muted:#9a97ad;--line:#33314a;
+  --accent:#8f8ef0;--accent-fg:#15141d;--gold:#e0b44a;--warn:#f08b84;--ok:#6fcf97;
+  --monster:#e3a35f;--spell:#5cc9b6;--trap:#e47bb3;--extra:#a5a5f0;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15141d;--panel:#1f1e2a;--fg:#ebe9f5;--muted:#9a97ad;--line:#33314a;
+  --accent:#8f8ef0;--accent-fg:#15141d;--gold:#e0b44a;--warn:#f08b84;--ok:#6fcf97;
+  --monster:#e3a35f;--spell:#5cc9b6;--trap:#e47bb3;--extra:#a5a5f0;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6}
+html,body{height:100%}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:8px;display:flex;flex-direction:column;gap:8px;height:100%;box-sizing:border-box;overflow:hidden}
+header{display:flex;align-items:baseline;gap:10px;justify-content:space-between}
+.grow{flex:1 1 auto;min-height:0}
+.grow>ul.list{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.seg{display:flex;gap:4px;overflow-x:auto;flex:none}
+.seg button{flex:1;white-space:nowrap;font:inherit;font-size:13px;font-weight:700;padding:3px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--muted);cursor:pointer}
+.seg button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.seg button.warn[aria-selected="false"]{color:var(--warn)}
+.hscroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+#toasts{position:fixed;left:0;right:0;top:0;z-index:50;display:flex;flex-direction:column;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top,0px) + 8px) 16px 0;pointer-events:none}
+.toast{pointer-events:auto;max-width:560px;width:100%;box-sizing:border-box;background:var(--warn);color:var(--panel);font-weight:700;font-size:14px;padding:10px 14px;border-radius:10px;box-shadow:0 6px 20px rgb(0 0 0/.25);cursor:pointer;animation:tin .25s ease-out;transition:opacity .25s,transform .25s}
+.toast.ok{background:var(--ok);color:var(--bg)}
+.toast small{display:block;font-weight:400;opacity:.85;font-size:12px}
+.toast.out{opacity:0;transform:translateY(-12px)}
+@keyframes tin{from{opacity:0;transform:translateY(-16px)}}
+@media (prefers-reduced-motion:reduce){.toast{animation:none;transition:none}}
+.switchrow{display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:700;cursor:pointer}
+.switch{flex:none;width:48px;height:28px;border-radius:99px;border:0;background:var(--line);position:relative;cursor:pointer;transition:background .2s}
+.switch span{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--panel);box-shadow:0 1px 3px rgb(0 0 0/.3);transition:transform .2s}
+.switch[aria-checked="true"]{background:var(--accent)}
+.switch[aria-checked="true"] span{transform:translateX(20px)}
+@media (prefers-reduced-motion:reduce){.switch,.switch span{transition:none}}
+.swlab{font-size:12px;color:var(--muted);flex:none}
+.info{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:0;font-size:14px}
+.info dt{color:var(--muted)}
+.info dd{margin:0;font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.decktitle{font-weight:700;font-size:16px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button.sm{padding:3px 9px;font-size:12px;line-height:1.5;border-radius:6px}
+h1{font-size:18px;margin:0;letter-spacing:.04em}
+.sub{color:var(--muted);font-size:13px;word-break:keep-all;overflow-wrap:anywhere}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--line);flex:none}
+nav button{flex:1;background:none;border:0;border-bottom:3px solid transparent;padding:6px 4px;font-size:14px!important;color:var(--muted);font:inherit;font-weight:700;cursor:pointer}
+nav button[aria-selected="true"]{color:var(--fg);border-color:var(--accent)}
+section,.col{display:flex;flex-direction:column;gap:8px;flex:1 1 auto;min-height:0}
+.panel>*{flex:none}
+.toggle{font:inherit;font-size:13px;font-weight:700;border-radius:99px;padding:5px 12px;border:1px solid var(--line);background:var(--bg);color:var(--muted);cursor:pointer;white-space:nowrap}
+.toggle[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.deckname{flex:1;min-width:0;text-align:left;background:none;border:0;padding:0;font:inherit;font-weight:700;color:var(--fg);cursor:pointer;overflow-wrap:anywhere}
+.deckname small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+ul.list li.grouphead{cursor:pointer;justify-content:space-between;padding:5px 10px;margin-top:8px;border-top:0;border-radius:6px;position:sticky;top:0;z-index:1;font-size:13px}
+ul.list li.grouphead:first-child{margin-top:0}
+ul.list li.grouphead+li{border-top:0}
+.grouphead .glab{font-weight:700}
+.grouphead .count{color:inherit;opacity:.8}
+.g-monster{background:color-mix(in srgb,var(--monster) 16%,var(--panel));color:var(--monster)}
+.g-spell{background:color-mix(in srgb,var(--spell) 16%,var(--panel));color:var(--spell)}
+.g-trap{background:color-mix(in srgb,var(--trap) 16%,var(--panel));color:var(--trap)}
+.g-extra{background:color-mix(in srgb,var(--extra) 16%,var(--panel));color:var(--extra)}
+.tap{cursor:pointer}.tap:hover .name{color:var(--accent)}
+.usebox{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 10px!important;border-top:0!important}
+.uses{display:block;font-size:12px;color:var(--muted)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row>*{min-width:0}
+input,select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:5px 9px}
+input[type=text],input[type=search]{flex:none;height:32px;box-sizing:border-box;min-width:0;width:100%;white-space:nowrap}
+.row>input[type=text],.row>input[type=search]{flex:1 1 180px;width:auto}
+button.btn{font:inherit;font-weight:700;border-radius:7px;padding:5px 12px;line-height:1.4;border:1px solid var(--accent);background:var(--accent);color:var(--accent-fg);cursor:pointer}
+button.ghost{background:transparent;color:var(--accent)}
+button.del{border-color:var(--warn);background:transparent;color:var(--warn)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h2{font-size:15px;margin:0;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.count{font-family:var(--f-num);color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+ul.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+ul.list li{display:flex;align-items:center;gap:8px;padding:4px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.35}
+.grow>ul.list{position:relative}
+ul.list li.grouphead~li:not(.grouphead):not(.usebox) .chip{display:none}
+ul.list li:first-child{border-top:0}
+.name{flex:1;min-width:0;overflow-wrap:anywhere}
+.chip{font-size:11px;font-weight:700;padding:0 4px;min-width:2.2em;text-align:center;box-sizing:border-box;border-radius:5px;border:1px solid currentColor;white-space:nowrap;flex:none}
+.t-monster{color:var(--monster)}.t-spell{color:var(--spell)}.t-trap{color:var(--trap)}.t-extra{color:var(--extra)}
+.qty{display:flex;align-items:center;gap:4px;font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.qty button{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;cursor:pointer}
+.qty span{min-width:1.6em;text-align:center}
+.empty{color:var(--muted);font-size:13px;padding:6px 0}
+.short{color:var(--warn);font-family:var(--f-num);font-weight:500}
+.okmsg{color:var(--ok);font-weight:700}
+.status{font-size:12px;color:var(--muted)}
+.picker{max-height:26vh;overflow-y:auto;overscroll-behavior:contain}
+.picker:has(.empty:only-child){display:none}
+.cats .toggle{font-size:12px;padding:2px 9px}
+</style>
+<style>html{box-sizing:border-box;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);color-scheme:light}body{margin:0;font-size:14px;-webkit-text-size-adjust:100%}*,*::before,*::after{box-sizing:inherit}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<div class="wrap">
+  <span class="status" id="status" hidden></span>
+<div id="toasts" aria-live="assertive"></div>
+  <nav role="tablist">
+    <button role="tab" data-tab="decks" aria-selected="true">デッキ</button>
+    <button role="tab" data-tab="short" aria-selected="false">不足カード</button>
+    <button role="tab" data-tab="owned" aria-selected="false">所持</button>
+    <button role="tab" data-tab="opt" aria-selected="false">設定</button>
+  </nav>
+
+  <section id="tab-decks">
+   <div id="deckListView" class="col">
+    <div class="panel">
+      <h2>デッキを作成</h2>
+      <form class="row" id="newDeckForm">
+        <input type="text" id="newDeckName" placeholder="デッキ名（例：レイズ・ムーン）" required>
+        <button class="btn">作成</button>
+      </form>
+    </div>
+    <div class="panel grow">
+      <h2>デッキ一覧 <span class="count" id="deckCount"></span></h2>
+      <div class="sub">「集計」がオンのデッキだけが不足カードの計算に入ります。</div>
+      <ul class="list" id="deckList"></ul>
+    </div>
+   </div>
+   <div id="deckEditView" class="col" hidden>
+    <div class="panel">
+      <div class="row">
+        <button class="btn ghost sm" id="backToList">← 一覧</button>
+        <span style="flex:1"></span>
+        <button class="btn ghost sm" id="renameDeck">名前変更</button>
+        <button class="btn del sm" id="delDeck">削除</button>
+      </div>
+      <div class="decktitle" id="deckTitle"></div>
+      <div class="row" id="renameRow" hidden>
+        <input type="text" id="renameInput" placeholder="デッキ名">
+        <button class="btn" id="renameOk">保存</button>
+      </div>
+      <div class="row" id="delRow" hidden style="flex-wrap:nowrap;justify-content:space-between">
+        <span style="font-size:14px">このデッキを削除しますか？</span>
+        <span class="row" style="flex:none;flex-wrap:nowrap;gap:6px">
+          <button class="btn ghost sm" id="delCancel">やめる</button>
+          <button class="btn del sm" id="delOk">削除する</button>
+        </span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="row" style="flex-wrap:nowrap">
+        <select id="addZone" style="flex:none;height:32px;padding:0 6px;font-size:13px" aria-label="追加先"><option value="auto">メイン/EX</option><option value="side">サイド</option></select>
+        <input type="search" id="addFilter" placeholder="カード名か読み仮名（例：しえろ）" style="flex:1 1 0">
+      </div>
+      <div class="hscroll cats" data-k="add"></div>
+      <ul class="list picker" id="addList"></ul>
+      <details>
+        <summary class="sub">一覧にないカードを手入力で追加</summary>
+        <form class="row" id="cardForm" style="margin-top:8px">
+          <input type="text" id="cardName" placeholder="カード名" required>
+          <select id="cardType"><option value="monster">モンスター</option><option value="spell">魔法</option><option value="trap">罠</option><option value="extra">EX</option></select>
+          <button class="btn">追加</button>
+        </form>
+      </details>
+    </div>
+    <div class="panel grow">
+      <div class="seg" id="zoneTabs" role="tablist"></div>
+      <ul class="list" id="zoneList"></ul>
+      <ul class="list" id="shortList" hidden></ul>
+    </div>
+   </div>
+  </section>
+
+  <section id="tab-short" hidden>
+    <div class="panel">
+      <h2>集計するデッキ</h2>
+      <div class="sub" id="shortRule"></div>
+      <div class="hscroll" id="incToggles"></div>
+    </div>
+    <div class="panel grow">
+      <h2>足りないカード <span class="count" id="totShortCount"></span></h2>
+      <div class="hscroll cats" data-k="short"></div>
+      <ul class="list" id="totShortList"></ul>
+    </div>
+  </section>
+
+  <section id="tab-opt" hidden>
+    <div class="panel">
+      <h2>不足カードの数え方</h2>
+      <div class="sub">同じカードを複数のデッキで使うときの必要枚数です。</div>
+      <label class="switchrow" for="reuseSw">
+        <span>デッキ間でカードを使い回す</span>
+        <button type="button" class="switch" id="reuseSw" role="switch" aria-checked="false"><span></span></button>
+      </label>
+      <div class="sub" id="reuseDesc"></div>
+    </div>
+    <div class="panel">
+      <h2>データのバックアップ</h2>
+      <div class="sub">デッキと所持カードをファイルに書き出します。機種変更や万一のときは、このファイルを読み込めば元に戻せます。</div>
+      <div class="row">
+        <button class="btn ghost sm" id="expBtn">ファイルに書き出す</button>
+        <button class="btn ghost sm" id="impBtn">ファイルから読み込む</button>
+        <input type="file" id="impFile" accept="application/json,.json" hidden>
+      </div>
+      <div class="row" id="impRow" hidden style="flex-wrap:nowrap;justify-content:space-between">
+        <span style="font-size:14px" id="impMsg"></span>
+        <span class="row" style="flex:none;flex-wrap:nowrap;gap:6px">
+          <button class="btn ghost sm" id="impCancel">やめる</button>
+          <button class="btn del sm" id="impOk">置き換える</button>
+        </span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>アプリの情報</h2>
+      <dl class="info">
+        <dt>バージョン</dt><dd id="appVer">—</dd>
+        <dt>カードデータ</dt><dd id="dataVer">—</dd>
+      </dl>
+      <div class="sub">ネットにつながっているときに新しい版を確認します。デッキなどのデータは消えません。</div>
+      <div class="row"><button class="btn ghost sm" id="updBtn">更新を確認</button></div>
+    </div>
+  </section>
+
+  <section id="tab-owned" hidden>
+    <div class="seg" id="ownTabs" role="tablist">
+      <button role="tab" data-v="add" aria-selected="true">カードを追加</button>
+      <button role="tab" data-v="list" aria-selected="false">所持一覧 <span id="ownedCount"></span></button>
+    </div>
+    <div class="panel grow" id="ownAddView">
+      <input type="search" id="ownSearch" placeholder="カード名か読み仮名の一部（例：しえろ、ぞうしょく）">
+      <div class="hscroll cats" data-k="own"></div>
+      <ul class="list" id="ownSearchList"></ul>
+    </div>
+    <div class="panel grow" id="ownListView" hidden>
+      <input type="search" id="ownedFilter" placeholder="所持カードを絞り込み">
+      <div class="hscroll cats" data-k="ownList"></div>
+      <ul class="list" id="ownedList"></ul>
+    </div>
+  </section>
+</div>
+
+<script>
+function toast(msg,sub,kind){document.querySelectorAll("#toasts .toast").forEach(o=>o.remove());const t=document.createElement("div");t.className="toast"+(kind==="ok"?" ok":"");t.setAttribute("role","alert");t.textContent=msg;if(sub){const s=document.createElement("small");s.textContent=sub+"（タップで閉じる）";t.append(s)}
+  const close=()=>{if(t.classList.contains("out"))return;t.classList.add("out");setTimeout(()=>t.remove(),260)};t.onclick=close;setTimeout(close,kind==="ok"?2500:6000);document.getElementById("toasts").append(t)}
+const TYPE={monster:"モンスター",spell:"魔法",trap:"罠",extra:"EX"};
+const SHORT={monster:"モ",spell:"魔",trap:"罠",extra:"EX"};
+const ZONE={main:"メイン",extra:"EX",side:"サイド"};
+const uid=()=>Math.random().toString(36).slice(2,10);
+const sample=()=>{
+  const c=[["レイズ・ムーンの帳 シエロ","monster"],["レイズ・ムーンの翼 ラピ","monster"],["レイズ・ムーンの星々","spell"],["眠らない街の『レイズ・ムーン』","spell"],["レイズ・ムーンの煌めき","trap"],["レイズ・ムーンの望 スクイーズ－ジャックポット","extra"]].map(([name,type])=>({id:uid(),name,type}));
+  const d={id:uid(),name:"レイズ・ムーン（例）",main:{},extra:{},side:{}};
+  c.forEach(x=>{(x.type==="extra"?d.extra:d.main)[x.id]=3});
+  const owned={};owned[c[0].id]=3;owned[c[2].id]=1;
+  return {cards:c,decks:[d],owned,cur:d.id,isSample:true};
+};
+let S={cards:[],decks:[],owned:{},cur:null},ref=null,saveTimer=null;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[m]);
+const card=id=>S.cards.find(c=>c.id===id);
+const deck=()=>S.decks.find(d=>d.id===S.cur)||S.decks[0];
+
+let okMsg=null;
+function save(msg){
+  if(msg)okMsg=msg;
+  delete S.isSample;
+  let local=true;try{localStorage.setItem("deckkobo",JSON.stringify(S))}catch(e){local=false}
+  if(!ref){if(okMsg){local?toast(okMsg,null,"ok"):toast("保存に失敗しました","この端末に保存できませんでした。");okMsg=null}return}
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(async()=>{
+    try{await ref.set({json:JSON.stringify(S)});if(okMsg)toast(okMsg,null,"ok")}
+    catch(e){toast("保存に失敗しました","この端末のブラウザには残っています。通信状況を確認してください。")}
+    okMsg=null;
+  },500);
+}
+
+function qty(v,onChange){
+  const w=document.createElement("div");w.className="qty";
+  const m=document.createElement("button");m.textContent="−";m.setAttribute("aria-label","減らす");
+  const n=document.createElement("span");n.textContent=v;
+  const p=document.createElement("button");p.textContent="+";p.setAttribute("aria-label","増やす");
+  m.onclick=()=>onChange(-1);p.onclick=()=>onChange(1);
+  w.append(m,n,p);return w;
+}
+function band(ul,ty,right){const h=document.createElement("li");h.className="grouphead g-"+ty;h.tabIndex=0;h.setAttribute("role","button");h.innerHTML=`<span class="glab">${TYPE[ty]}</span><span class="count">${right}</span>`;
+  const go=()=>ul.scrollTo({top:h.offsetTop,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});h.onclick=go;h.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}};ul.append(h)}
+function grouped(ul,cards,countOf,row){ORDER.forEach(ty=>{const g=cards.filter(c=>c.type===ty);if(!g.length)return;band(ul,ty,`${g.length}種・${g.reduce((a,c)=>a+countOf(c),0)}枚`);g.forEach(c=>ul.append(row(c)))})}
+function li(c,extra){
+  const l=document.createElement("li");
+  l.innerHTML=`<span class="chip t-${c.type}" title="${TYPE[c.type]}">${SHORT[c.type]}</span><span class="name">${esc(c.name)}</span>`;
+  extra&&l.append(extra);return l;
+}
+let DB=[];
+const hira=s=>s.replace(/[\u30a1-\u30f6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60));
+const norm=s=>hira(s.normalize("NFKC").toLowerCase()).replace(/[\s・･\-－‐ー『』「」]/g,"");
+const YOMI=new Map();
+const yomi=n=>hira(YOMI.get(n)||n);
+const TMAP={m:"monster",s:"spell",t:"trap",x:"extra"};
+const match=(c,q)=>!q||(norm(c.name)+"|"+norm(YOMI.get(c.name)||"")).includes(norm(q));
+// 候補：カード一覧＋手入力カード
+const CAT={};
+function search(q,cat){
+  q=norm(q);if(!q&&!cat)return [];const max=q?50:200;
+  const out=[],seen=new Set();const ok=t=>!cat||t===cat;
+  S.cards.forEach(c=>{if(ok(c.type)&&match(c,q)){out.push({name:c.name,type:c.type});seen.add(c.name)}});
+  for(const x of DB){if(out.length>=max)break;const t=TMAP[x.t];if(ok(t)&&!seen.has(x.n)&&(!q||x.k.includes(q)))out.push({name:x.n,type:t})}
+  return out.sort(cmp).slice(0,max);
+}
+function catBar(el){const k=el.dataset.k;el.innerHTML="";[["","すべて"],["monster","モンスター"],["spell","魔法"],["trap","罠"],["extra","EX"]].forEach(([v,l])=>{const b=document.createElement("button");b.className="toggle";b.textContent=l;b.setAttribute("aria-pressed",(CAT[k]||"")===v);b.onclick=()=>{CAT[k]=v;render()};el.append(b)})}
+function ensure(c){let x=S.cards.find(y=>y.name===c.name);if(!x){x={id:uid(),name:c.name,type:c.type};S.cards.push(x)}return x.id}
+function pickList(ul,q,label,onPick,cat){
+  ul.innerHTML="";
+  if(!norm(q)&&!cat){ul.innerHTML='<li class="empty">カード名を入力するか、種類を選ぶと候補が出ます。</li>';return}
+  const hits=search(q,cat);
+  if(!hits.length){ul.innerHTML='<li class="empty">見つかりません。</li>';return}
+  hits.forEach(c=>{const b=document.createElement("button");b.className="btn ghost";b.textContent=label(c);b.onclick=()=>onPick(c);ul.append(li(c,b))});
+}
+// 使われていない手入力以外のカードは掃除
+function gc(){const used=new Set(Object.keys(S.owned));S.decks.forEach(d=>["main","extra","side"].forEach(z=>Object.keys(d[z]).forEach(i=>used.add(i))));S.cards=S.cards.filter(c=>used.has(c.id)||c.manual)}
+function renderDecks(){
+  renderDeckList();
+  const d=view==="edit"?deck():null;
+  $("deckListView").hidden=!!d;$("deckEditView").hidden=!d;
+  if(!d)return;
+  $("deckTitle").textContent=d.name;requestAnimationFrame(fitTitle);
+  const has=!!d;["renameDeck","delDeck"].forEach(i=>$(i).disabled=!has);
+    if(!d)return;
+  const z=$("addZone").value;
+  const zoneOf=c=>z==="side"?"side":(c.type==="extra"?"extra":"main");
+  pickList($("addList"),$("addFilter").value,c=>"＋"+ZONE[zoneOf(c)],c=>{const id=ensure(c),zk=zoneOf(c);d[zk][id]=Math.min(3,(d[zk][id]||0)+1);save();renderDecks()},CAT.add);
+  const zt=$("zoneTabs");zt.innerHTML="";const zl=$("zoneList");zl.innerHTML="";
+  const [cm,cx,cs]=cnt(d);
+  [["main","メイン "+cm],["extra","EX "+cx],["side","サイド "+cs],["short","不足"]].forEach(([k,lab])=>{const b=document.createElement("button");b.setAttribute("role","tab");b.setAttribute("aria-selected",curZone===k);b.textContent=lab;if(k==="short")b.id="shortTab";b.onclick=()=>{curZone=k;renderDecks()};zt.append(b)});
+  zl.hidden=curZone==="short";$("shortList").hidden=curZone!=="short";
+  if(curZone!=="short"){const zk=curZone;const ids=sortIds(Object.keys(d[zk]).filter(card));
+    if(!ids.length)zl.innerHTML='<li class="empty">まだカードがありません。上の検索から追加してください。</li>';
+    grouped(zl,ids.map(card),c=>d[zk][c.id],c=>{const i=c.id;return li(c,qty(d[zk][i],dv=>{const v=d[zk][i]+dv;if(v<=0){delete d[zk][i];gc()}else d[zk][i]=Math.min(3,v);save();renderDecks()}))});}
+  const need={};["main","extra","side"].forEach(zk=>Object.entries(d[zk]).forEach(([i,n])=>{if(card(i))need[i]=(need[i]||0)+n}));
+  const sl=$("shortList");sl.innerHTML="";let tot=0;
+  Object.entries(need).forEach(([i,n])=>{
+    const lack=n-(S.owned[i]||0);if(lack<=0)return;tot+=lack;
+    const s=document.createElement("span");s.className="short";s.textContent=`所持${S.owned[i]||0}／必要${n}　あと${lack}枚`;
+    sl.append(li(card(i),s));
+  });
+  const stb=$("shortTab");if(stb){stb.textContent=tot?`不足 ${tot}`:"不足 0";if(tot)stb.classList.add("warn")}
+  if(!tot)sl.innerHTML='<li class="okmsg">不足カードはありません。</li>';
+}
+function setOwned(id,v){if(v>0)S.owned[id]=v;else{delete S.owned[id];gc()}save();renderOwned()}
+function renderOwned(){
+  pickList($("ownSearchList"),$("ownSearch").value,c=>{const x=S.cards.find(y=>y.name===c.name);return "＋1（所持"+((x&&S.owned[x.id])||0)+"）"},c=>{const id=ensure(c);setOwned(id,(S.owned[id]||0)+1)},CAT.own);
+  const q=$("ownedFilter").value,ul=$("ownedList");ul.innerHTML="";
+  $("ownedCount").textContent=Object.values(S.owned).reduce((a,b)=>a+b,0)+"枚";
+  const oc=CAT.ownList;const list=S.cards.filter(c=>S.owned[c.id]&&(!oc||c.type===oc)&&match(c,q)).sort(cmp);
+  if(!list.length)ul.innerHTML=Object.keys(S.owned).length?'<li class="empty">該当する所持カードはありません。</li>':'<li class="empty">所持カードはまだありません。「カードを追加」から登録してください。</li>';
+  grouped(ul,list,c=>S.owned[c.id],c=>li(c,qty(S.owned[c.id],dv=>setOwned(c.id,S.owned[c.id]+dv))));
+}
+let view="list",curZone="main";
+const ORDER=["monster","spell","trap","extra"];
+const coll=new Intl.Collator("ja");
+const cmp=(a,b)=>ORDER.indexOf(a.type)-ORDER.indexOf(b.type)||coll.compare(yomi(a.name),yomi(b.name));
+const sortIds=ids=>ids.sort((x,y)=>cmp(card(x),card(y)));
+function goTab(t){document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===t));["decks","short","owned","opt"].forEach(k=>$("tab-"+k).hidden=k!==t)}
+const inc=d=>d.inc!==false;
+const cnt=d=>["main","extra","side"].map(z=>Object.values(d[z]).reduce((a,b)=>a+b,0));
+function openDeck(id){S.cur=id;view="edit";curZone="main";$("addFilter").value="";save();renderDecks();window.scrollTo(0,0)}
+function incBtn(d,onDone){const b=document.createElement("button");b.className="toggle";b.setAttribute("aria-pressed",inc(d));b.textContent=inc(d)?"集計に含める":"集計から除外";b.onclick=()=>{d.inc=!inc(d);save();onDone()};return b}
+function renderDeckList(){
+  const ul=$("deckList");ul.innerHTML="";$("deckCount").textContent=S.decks.length+"個";
+  if(!S.decks.length){ul.innerHTML='<li class="empty">デッキはまだありません。上で名前を入れて作成してください。</li>';return}
+  S.decks.forEach(d=>{const l=document.createElement("li");const [m,x,sd]=cnt(d);
+    const n=document.createElement("button");n.className="deckname";n.innerHTML=`${esc(d.name)}<small>メイン${m}・EX${x}・サイド${sd}</small>`;n.onclick=()=>openDeck(d.id);
+    const sw=document.createElement("button");sw.type="button";sw.className="switch";sw.setAttribute("role","switch");sw.setAttribute("aria-checked",inc(d));sw.setAttribute("aria-label",`「${d.name}」を集計に含める`);sw.innerHTML="<span></span>";sw.onclick=()=>{d.inc=!inc(d);save();renderDeckList()};
+    const lab=document.createElement("span");lab.className="swlab";lab.textContent="集計";l.append(n,lab,sw);ul.append(l)});
+}
+function renderShort(){
+  const t=$("incToggles");t.innerHTML="";
+  if(!S.decks.length)t.innerHTML='<span class="empty">デッキがありません。</span>';
+  S.decks.forEach(d=>{const b=incBtn(d,renderShort);b.textContent=d.name;b.title=inc(d)?"押すと集計から外します":"押すと集計に含めます";t.append(b)});
+  const need={},uses={};
+  S.decks.filter(inc).forEach(d=>["main","extra","side"].forEach(z=>Object.entries(d[z]).forEach(([i,n])=>{if(!card(i))return;need[i]=reuse()?Math.max(need[i]||0,n):(need[i]||0)+n;(uses[i]=uses[i]||{})[d.id]=(uses[i][d.id]||0)+n})));
+  const ul=$("totShortList");ul.innerHTML="";let tot=0;
+  const rows=Object.entries(need).map(([i,n])=>[i,n,n-(S.owned[i]||0)]).filter(x=>x[2]>0);
+  ORDER.filter(ty=>!CAT.short||ty===CAT.short).forEach(ty=>{
+    const g=rows.filter(r=>card(r[0]).type===ty).sort((a,b)=>cmp(card(a[0]),card(b[0])));
+    if(!g.length)return;
+    const sub=g.reduce((a,r)=>a+r[2],0);
+    const h=document.createElement("li");h.className="grouphead g-"+ty;h.tabIndex=0;h.setAttribute("role","button");h.title="このカテゴリの先頭へ";{const go=()=>ul.scrollTo({top:h.offsetTop,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});h.onclick=go;h.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}}}h.innerHTML=`<span class="glab">${TYPE[ty]}</span><span class="count">${g.length}種・${sub}枚</span>`;ul.append(h);
+    g.forEach(([i,n,lack])=>{
+      tot+=lack;const w=document.createElement("span");w.style.textAlign="right";
+      w.innerHTML=`<span class="short">あと${lack}枚</span><span class="uses">所持${S.owned[i]||0}／必要${n}</span>`;
+      const l=li(card(i),w);l.classList.add("tap");l.tabIndex=0;l.setAttribute("role","button");l.setAttribute("aria-expanded","false");
+      const box=document.createElement("li");box.className="usebox";box.hidden=true;
+      Object.entries(uses[i]).forEach(([did,v])=>{const d=S.decks.find(x=>x.id===did);const b=document.createElement("button");b.className="btn ghost";b.textContent=`${d.name}（${v}枚）`;b.onclick=()=>{goTab("decks");openDeck(did)};box.append(b)});
+      const tg=()=>{box.hidden=!box.hidden;l.setAttribute("aria-expanded",!box.hidden)};
+      l.onclick=tg;l.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();tg()}};
+      ul.append(l,box);
+    });
+  });
+  $("totShortCount").textContent=tot?`計${tot}枚`:"";
+  if(!tot)ul.innerHTML=S.decks.some(inc)?(CAT.short?'<li class="okmsg">この種類で足りないカードはありません。</li>':'<li class="okmsg">足りないカードはありません。</li>'):'<li class="empty">集計するデッキを選んでください。</li>';
+}
+const reuse=()=>!!(S.opt&&S.opt.reuse);
+function renderOpt(){const r=reuse();$("reuseSw").setAttribute("aria-checked",r);
+  $("reuseDesc").textContent=r?"デッキ間でカードを使い回します。必要枚数は、そのカードをいちばん多く使っているデッキの枚数です（例：Aで3枚、Bで2枚なら3枚）。":"デッキごとに別々に揃えます。必要枚数は、各デッキで使う枚数の合計です（例：Aで3枚、Bで2枚なら5枚）。";
+  $("shortRule").textContent=r?"押すと含める／外すを切り替え。カードは使い回す前提で、最も多いデッキの枚数が必要数です。":"押すと含める／外すを切り替え。同じカードは全デッキの合計枚数が必要数です。"}
+$("reuseSw").onclick=()=>{S.opt={...(S.opt||{}),reuse:!reuse()};save();render()};
+function render(){renderOpt();document.querySelectorAll(".cats").forEach(catBar);renderDecks();renderShort();renderOwned()}
+document.querySelectorAll("#ownTabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#ownTabs button").forEach(x=>x.setAttribute("aria-selected",x===b));$("ownAddView").hidden=b.dataset.v!=="add";$("ownListView").hidden=b.dataset.v!=="list";requestAnimationFrame(fitAll)});
+
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x===b));
+  ["decks","short","owned","opt"].forEach(t=>$("tab-"+t).hidden=t!==b.dataset.tab);render();
+});
+$("cardForm").onsubmit=e=>{e.preventDefault();const n=$("cardName").value.trim();const d=deck();if(!n||!d)return;
+  let x=S.cards.find(c=>c.name===n);if(!x){x={id:uid(),name:n,type:$("cardType").value,manual:true};S.cards.push(x)}
+  const zk=$("addZone").value==="side"?"side":(x.type==="extra"?"extra":"main");d[zk][x.id]=Math.min(3,(d[zk][x.id]||0)+1);
+  $("cardName").value="";save();renderDecks()};
+["addFilter","ownedFilter","ownSearch"].forEach(i=>$(i).oninput=render);
+$("addZone").onchange=renderDecks;
+$("newDeckForm").onsubmit=e=>{e.preventDefault();const n=$("newDeckName").value.trim();if(!n)return;
+  const d={id:uid(),name:n,main:{},extra:{},side:{},inc:true};S.decks.push(d);$("newDeckName").value="";okMsg=`「${n}」を保存しました`;openDeck(d.id)};
+$("backToList").onclick=()=>{view="list";$("renameRow").hidden=true;$("delRow").hidden=true;renderDecks()};
+$("renameDeck").onclick=()=>{$("renameRow").hidden=false;$("renameInput").value=deck()?.name||"";$("renameInput").focus()};
+$("renameOk").onclick=()=>{const v=$("renameInput").value.trim();let m=null;if(v&&deck()&&deck().name!==v){deck().name=v;m=`デッキ名を「${v}」に変更しました`}$("renameRow").hidden=true;save(m);renderDecks()};
+$("delDeck").onclick=()=>{$("delRow").hidden=false};
+$("delCancel").onclick=()=>{$("delRow").hidden=true};
+$("delOk").onclick=()=>{const dn=deck()?.name;okMsg=`「${dn}」を削除しました`;S.decks=S.decks.filter(d=>d.id!==S.cur);S.cur=S.decks[0]?.id;$("delRow").hidden=true;view="list";gc();save();renderDecks()};
+
+const setDbCount=t=>document.querySelectorAll(".dbCount").forEach(e=>e.textContent=t);
+fetch("cardlist.json").then(r=>r.json()).then(l=>{DB=l.map(([n,t,r])=>{if(r)YOMI.set(n,r);return {n,t,k:norm(n)+"|"+norm(r||"")}});setDbCount(DB.length.toLocaleString()+"種から検索");$("dataVer").textContent=`${DATA_DATE}・${DB.length.toLocaleString()}種`;render()})
+  .catch(()=>{setDbCount("");toast("カード一覧を読み込めませんでした","ページを開き直してください。手入力での追加は使えます。")});
+
+try{const l=localStorage.getItem("deckkobo");if(l)S=JSON.parse(l)}catch(e){}
+render();
+$("status").textContent=S.isSample?"（例のデータを表示中）":"";
+
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+
+// 入力欄：1行に収まらないときは文字を小さくする
+const _cv=document.createElement("canvas").getContext("2d");
+function fitInput(el){const cs=getComputedStyle(el);const avail=el.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)-24;const t=el.value||el.placeholder;let f=14;
+  while(f>10){_cv.font=`${f}px ${cs.fontFamily}`;if(_cv.measureText(t).width<=avail)break;f-=.5}el.style.fontSize=f+"px"}
+function fitTitle(){const el=$("deckTitle");if(!el.offsetParent)return;const cs=getComputedStyle(el);let f=16;while(f>11){_cv.font=`700 ${f}px ${cs.fontFamily}`;if(_cv.measureText(el.textContent).width<=el.clientWidth)break;f-=.5}el.style.fontSize=f+"px"}
+const fitAll=()=>document.querySelectorAll('input[type=text],input[type=search]').forEach(e=>{if(e.offsetParent)fitInput(e)});
+document.addEventListener("input",e=>{if(e.target.matches('input[type=text],input[type=search]'))fitInput(e.target)});
+window.addEventListener("resize",()=>{fitAll();fitTitle()});
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>requestAnimationFrame(fitAll)));
+document.addEventListener("click",()=>requestAnimationFrame(fitAll));
+requestAnimationFrame(fitAll);
+
+// 日本語の改行：句点 → カッコ → 読点 → 文節 の優先順で行を分ける
+const _seg=typeof Intl!=="undefined"&&Intl.Segmenter?new Intl.Segmenter("ja",{granularity:"word"}):null;
+function jaTokens(t){
+  const raw=_seg?[..._seg.segment(t)].map(x=>x.segment):t.split(/(?<=[、。])/);
+  const out=[];
+  for(const w of raw){
+    const prev=out.length?out[out.length-1].t:"";const attach=out.length&&((/^[、。」』）)】！？：・…]+$/.test(w))||(!/[、。」』）)】]$/.test(prev)&&/^[ぁ-ゖー]+$/.test(w))||/[「『（(]$/.test(out[out.length-1].t));
+    if(attach)out[out.length-1].t+=w;else out.push({t:w});
+  }
+  // 優先度：句点4 → カッコの前後3 → 読点2 → 文節1
+  out.forEach((o,k)=>{o.p=/。$/.test(o.t)?4:/[）)」』】]$/.test(o.t)?3:/、$/.test(o.t)?2:1;
+    const nx=out[k+1];if(nx&&/^[（(「『【]/.test(nx.t)&&o.p<3)o.p=3});
+  return out;
+}
+function layoutJa(el){
+  if(el.querySelector("*:not(br)")||!el.offsetParent)return;
+  const t=el.textContent;if(!t)return;
+  const cs=getComputedStyle(el);_cv.font=`${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const W=el.clientWidth-1,ls=parseFloat(cs.letterSpacing)||0,wd=s=>_cv.measureText(s).width+ls*s.length;
+  let lines=[t];
+  if(wd(t)>W){const tk=jaTokens(t);lines=[];let i=0;
+    while(i<tk.length){let w=0,j=i,best=-1,bp=0;
+      for(;j<tk.length;j++){w+=wd(tk[j].t);if(w>W)break;if(j===tk.length-1){best=j;bp=9;break}if(tk[j].p>=bp){bp=tk[j].p;best=j}}
+      if(best<i)best=i;lines.push(tk.slice(i,best+1).map(x=>x.t).join(""));i=best+1}}
+  const key=lines.join("\n");if(el._lk===key&&el.childNodes.length===lines.length*2-1)return;
+  el._lk=key;el.replaceChildren(...lines.flatMap((l,k)=>k?[document.createElement("br"),l]:[l]));
+}
+let _rq=0;const relayout=()=>{if(_rq)return;_rq=requestAnimationFrame(()=>{_rq=0;document.querySelectorAll(".sub,.empty").forEach(layoutJa)})};
+new MutationObserver(relayout).observe(document.body,{subtree:true,childList:true,characterData:true});
+window.addEventListener("resize",relayout);
+document.addEventListener("click",relayout);
+relayout();
+
+// バージョン表示（sw.js の VERSION を正とする）
+fetch("sw.js").then(r=>r.text()).then(t=>{const m=t.match(/VERSION="([^"]+)"/);$("appVer").textContent=m?m[1]:"不明"}).catch(()=>{$("appVer").textContent="不明"});
+const DATA_DATE="2026年9月24日時点";
+// バックアップ
+const todayStr=()=>{const d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")};
+$("expBtn").onclick=()=>{try{const b=new Blob([JSON.stringify({app:"deckkobo",v:1,data:S},null,1)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=`deckkobo-${todayStr()}.json`;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast("書き出しました",null,"ok")}catch(e){toast("書き出せませんでした","もう一度お試しください。")}};
+let _imp=null;
+$("impBtn").onclick=()=>$("impFile").click();
+$("impFile").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
+  try{const j=JSON.parse(await f.text());const d=j&&j.app==="deckkobo"?j.data:null;if(!d||!Array.isArray(d.decks)||!Array.isArray(d.cards))throw 0;
+    _imp=d;$("impMsg").textContent=`デッキ${d.decks.length}個のデータで今のデータを置き換えますか？`;$("impRow").hidden=false}
+  catch(err){toast("読み込めませんでした","デッキ工房で書き出したファイルを選んでください。")}};
+$("impCancel").onclick=()=>{_imp=null;$("impRow").hidden=true};
+$("impOk").onclick=()=>{if(!_imp)return;S=_imp;S.owned=S.owned||{};_imp=null;$("impRow").hidden=true;view="list";save("データを読み込みました");render()};
+// オフライン対応と更新
+let _reg=null;
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js").then(r=>{_reg=r}).catch(()=>{});
+  let _reloading=false;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(_reloading)return;_reloading=true;location.reload()});
+}
+$("updBtn").onclick=async()=>{
+  if(!_reg){toast("更新を確認できませんでした","ホーム画面に追加したアプリから開いてください。");return}
+  if(!navigator.onLine){toast("ネットにつながっていません","つながる場所でもう一度お試しください。");return}
+  try{await _reg.update();const w=_reg.waiting||_reg.installing;
+    if(w){toast("新しい版に更新しています…",null,"ok");const go=()=>w.postMessage("skip");if(w.state==="installed")go();else w.addEventListener("statechange",()=>{if(w.state==="installed")go()})}
+    else toast("最新の版です",null,"ok")}catch(e){toast("更新を確認できませんでした","通信状況を確認してください。")}};
+</script>
+</body>
+</html>
