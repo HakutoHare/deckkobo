@@ -203,6 +203,11 @@ ul.list li:first-child{border-top:0}
       <h2>足りないカード <span class="count" id="totShortCount"></span></h2>
       <div class="hscroll cats" data-k="short"></div>
       <ul class="list" id="totShortList"></ul>
+      <div class="row" id="buyRow" style="flex-wrap:nowrap" hidden>
+        <span class="count" id="buyTot" style="flex:1"></span>
+        <button type="button" class="btn ghost sm" id="buyClear">クリア</button>
+        <button type="button" class="btn sm" id="buyOk">所持に追加</button>
+      </div>
     </div>
   </section>
 
@@ -426,7 +431,7 @@ function renderDeckList(){
     const sw=document.createElement("button");sw.type="button";sw.className="switch";sw.setAttribute("role","switch");sw.setAttribute("aria-checked",inc(d));sw.setAttribute("aria-label",`「${d.name}」を集計に含める`);sw.innerHTML="<span></span>";sw.onclick=()=>{d.inc=!inc(d);save();renderDeckList()};
     const lab=document.createElement("span");lab.className="swlab";lab.textContent="集計";l.append(n,lab,sw);ul.append(l)});
 }
-const _keepShort=new Set();
+const _buy={};
 function renderShort(){
   const t=$("incToggles");t.innerHTML="";
   if(!S.decks.length)t.innerHTML='<span class="empty">デッキがありません。</span>';
@@ -434,18 +439,20 @@ function renderShort(){
   const need={},uses={};
   S.decks.filter(inc).forEach(d=>["main","extra","side"].forEach(z=>Object.entries(d[z]).forEach(([i,n])=>{if(!card(i))return;need[i]=reuse()?Math.max(need[i]||0,n):(need[i]||0)+n;(uses[i]=uses[i]||{})[d.id]=(uses[i][d.id]||0)+n})));
   const ul=$("totShortList");ul.innerHTML="";let tot=0;
-  // 所持の＋−で足りたカードも、この画面を離れるまでは一覧に残す（−で戻せるように）
-  const rows=Object.entries(need).map(([i,n])=>[i,n,n-(S.owned[i]||0)]).filter(x=>x[2]>0||_keepShort.has(x[0]));
+  const rows=Object.entries(need).map(([i,n])=>[i,n,n-(S.owned[i]||0)]).filter(x=>x[2]>0);
+  // 買う予定の枚数は不足分まで。足りたカードや一覧から消えたカードの分は捨てる
+  const lacks=Object.fromEntries(rows.map(r=>[r[0],r[2]]));for(const i in _buy){_buy[i]=Math.min(_buy[i],lacks[i]||0);if(!_buy[i])delete _buy[i]}
   ORDER.filter(ty=>!CAT.short||ty===CAT.short).forEach(ty=>{
     const g=rows.filter(r=>card(r[0]).type===ty).sort((a,b)=>cmp(card(a[0]),card(b[0])));
     if(!g.length)return;
-    const sub=g.reduce((a,r)=>a+Math.max(0,r[2]),0);
+    const sub=g.reduce((a,r)=>a+r[2],0);
     const h=document.createElement("li");h.className="grouphead g-"+ty;h.tabIndex=0;h.setAttribute("role","button");h.title="このカテゴリの先頭へ";{const go=()=>ul.scrollTo({top:h.offsetTop,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});h.onclick=go;h.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}}}h.innerHTML=`<span class="glab">${TYPE[ty]}</span><span class="count">${g.length}種・${sub}枚</span>`;ul.append(h);
     g.forEach(([i,n,lack])=>{
-      tot+=Math.max(0,lack);const w=document.createElement("span");w.style.textAlign="right";
-      w.innerHTML=(lack>0?`<span class="short">あと${lack}枚</span>`:`<span class="okmsg">足りています</span>`)+`<span class="uses">所持${S.owned[i]||0}／必要${n}</span>`;
-      const q=qty(S.owned[i]||0,dv=>{const v=Math.max(0,(S.owned[i]||0)+dv);if(v)S.owned[i]=v;else delete S.owned[i];_keepShort.add(i);save();renderShort()});
-      q.querySelectorAll("button").forEach((x,k)=>x.setAttribute("aria-label",k?"所持を増やす":"所持を減らす"));q.onclick=e=>e.stopPropagation();q.onkeydown=e=>e.stopPropagation();
+      tot+=lack;const w=document.createElement("span");w.style.textAlign="right";
+      w.innerHTML=`<span class="short">あと${lack}枚</span><span class="uses">所持${S.owned[i]||0}／必要${n}</span>`;
+      // ＋−で変えるのは「買って所持に追加する予定の枚数」（0〜不足分）。下の「所持に追加」で確定する
+      const q=qty(_buy[i]||0,dv=>{const v=Math.max(0,Math.min(lack,(_buy[i]||0)+dv));if(v)_buy[i]=v;else delete _buy[i];renderShort()});
+      q.querySelectorAll("button").forEach((x,k)=>x.setAttribute("aria-label",k?"追加する枚数を増やす":"追加する枚数を減らす"));q.onclick=e=>e.stopPropagation();q.onkeydown=e=>e.stopPropagation();
       const wr=document.createElement("span");wr.className="row";wr.style.cssText="flex:none;flex-wrap:nowrap;gap:8px";wr.append(w,q);
       const l=li(card(i),wr);l.classList.add("tap");l.tabIndex=0;l.setAttribute("role","button");l.setAttribute("aria-expanded","false");
       const box=document.createElement("li");box.className="usebox";box.hidden=true;
@@ -456,6 +463,7 @@ function renderShort(){
     });
   });
   $("totShortCount").textContent=tot?`計${tot}枚`:"";
+  const bt=Object.values(_buy).reduce((a,b)=>a+b,0);$("buyRow").hidden=!tot;$("buyTot").textContent=bt?`追加する枚数：${bt}枚`:"＋で追加する枚数を選べます";$("buyOk").disabled=!bt;$("buyClear").disabled=!bt;
   if(!tot)ul.innerHTML=S.decks.some(inc)?(CAT.short?'<li class="okmsg">この種類で足りないカードはありません。</li>':'<li class="okmsg">足りないカードはありません。</li>'):'<li class="empty">集計するデッキを選んでください。</li>';
 }
 const reuse=()=>!!(S.opt&&S.opt.reuse);
@@ -468,7 +476,7 @@ document.querySelectorAll("#ownTabs button").forEach(b=>b.onclick=()=>{document.
 
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
   document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x===b));
-  _keepShort.clear();["decks","short","owned","opt"].forEach(t=>$("tab-"+t).hidden=t!==b.dataset.tab);render();if(b.dataset.tab==="opt")showVer();
+  ["decks","short","owned","opt"].forEach(t=>$("tab-"+t).hidden=t!==b.dataset.tab);render();if(b.dataset.tab==="opt")showVer();
 });
 $("cardForm").onsubmit=e=>{e.preventDefault();const n=$("cardName").value.trim();const d=deck();if(!n||!d)return;
   let x=S.cards.find(c=>c.name===n);if(!x){x={id:uid(),name:n,type:$("cardType").value,manual:true};S.cards.push(x)}
@@ -483,6 +491,8 @@ $("renameDeck").onclick=()=>{$("renameRow").hidden=false;$("renameInput").value=
 $("renameOk").onclick=()=>{const v=$("renameInput").value.trim();let m=null;if(v&&deck()&&deck().name!==v){deck().name=v;m=`デッキ名を「${v}」に変更しました`}$("renameRow").hidden=true;save(m);renderDecks()};
 // デッキのカードを所持にまとめて登録／差し引く。枚数はメイン・EX・サイドの合計
 const deckNeed=d=>{const need={};["main","extra","side"].forEach(zk=>Object.entries(d[zk]).forEach(([i,n])=>{if(card(i))need[i]=(need[i]||0)+n}));return need};
+$("buyClear").onclick=()=>{for(const i in _buy)delete _buy[i];renderShort()};
+$("buyOk").onclick=()=>{let k=0;for(const i in _buy){if(card(i)){S.owned[i]=(S.owned[i]||0)+_buy[i];k+=_buy[i]}delete _buy[i]}if(!k)return;save(`所持に${k}枚追加しました`);render()};
 // 所持追加／所持削除：カードごとに枚数を選ぶウィンドウ
 //   追加の初期値は設定の「デッキ間でカードを使い回す」に合わせる（使い回す → 足りない分だけ／使い回さない → デッキの枚数をそのまま）
 //   削除の初期値はデッキで使う枚数（所持している枚数まで）。所持していないカードは出さない
