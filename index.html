@@ -113,7 +113,7 @@ ul.list li:first-child{border-top:0}
 .cats .toggle{font-size:12px;padding:2px 9px}
 </style>
 <style>html{box-sizing:border-box;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);color-scheme:light}body{margin:0;font-size:14px;-webkit-text-size-adjust:100%}*,*::before,*::after{box-sizing:inherit}[hidden]{display:none!important}</style>
-<style>.hdr{flex-wrap:nowrap;gap:4px}.hdr .btn{white-space:nowrap;padding:3px 6px;flex:none;font-size:clamp(10px,3.1vw,12px)}.modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}.modal .panel{width:100%;max-width:420px;max-height:100%;overflow:auto}.modal .miss{color:var(--warn);font-size:13px;max-height:8em;overflow:auto;overflow-wrap:anywhere}</style>
+<style>.btn:disabled{opacity:.4;cursor:default}.hdr{flex-wrap:nowrap;gap:4px}.hdr .btn{white-space:nowrap;padding:3px 6px;flex:none;font-size:clamp(10px,3.1vw,12px)}.modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}.modal .panel{width:100%;max-width:420px;max-height:100%;overflow:auto}.modal .list{max-height:52vh;overflow:auto}.modal .have{color:var(--muted);font-size:12px;font-family:var(--f-num);white-space:nowrap}.modal .miss{color:var(--warn);font-size:13px;max-height:8em;overflow:auto;overflow-wrap:anywhere}</style>
 </head>
 <body>
 
@@ -266,6 +266,23 @@ ul.list li:first-child{border-top:0}
       <ul class="list" id="ownedList"></ul>
     </div>
   </section>
+</div>
+
+<div class="modal" id="ownModal" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="ownModalTitle">
+    <h2 id="ownModalTitle">所持に追加</h2>
+    <div class="sub" id="ownModalRule"></div>
+    <div class="row" style="flex-wrap:nowrap;gap:6px">
+      <button type="button" class="btn ghost sm" id="ownModalAll">すべて初期値</button>
+      <button type="button" class="btn ghost sm" id="ownModalNone">すべて0</button>
+    </div>
+    <ul class="list" id="ownModalList"></ul>
+    <div class="row" style="flex-wrap:nowrap">
+      <span class="count" id="ownModalTot" style="flex:1"></span>
+      <button type="button" class="btn ghost sm" id="ownModalCancel">やめる</button>
+      <button type="button" class="btn sm" id="ownModalOk">追加する</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal" id="pdfModal" hidden>
@@ -468,14 +485,33 @@ const deckNeed=d=>{const need={};["main","extra","side"].forEach(zk=>Object.entr
 var _own=null;
 const ownConf=(mode,msg)=>{_own=mode;$("ownConfMsg").textContent=msg;$("ownOk").className="btn sm"+(mode==="sub"?" del":"");$("ownConfRow").hidden=false};
 function ownClose(){_own=null;$("ownConfRow").hidden=true}
-$("ownAll").onclick=()=>ownConf("add","このデッキのカードを、足りない分だけ所持に追加しますか？");
+// 所持追加：カードごとに追加する枚数を選ぶ。初期値は設定の「デッキ間でカードを使い回す」に合わせる
+//   使い回す → 足りない分だけ／使い回さない → デッキの枚数をそのまま
+let _add=null,_addDef=null;
+function openOwnAdd(){const d=deck();if(!d)return;const need=deckNeed(d);const ids=sortIds(Object.keys(need));
+  if(!ids.length){toast("このデッキにはカードがありません",null,"ok");return}
+  _addDef={};ids.forEach(i=>{_addDef[i]=reuse()?Math.max(0,need[i]-(S.owned[i]||0)):need[i]});_add={..._addDef};
+  $("ownModalRule").textContent=reuse()?"「デッキ間でカードを使い回す」がオンなので、足りない分だけを初期値にしています。":"「デッキ間でカードを使い回す」がオフなので、デッキの枚数をそのまま初期値にしています。";
+  renderOwnAdd();$("ownModalList").scrollTop=0;$("ownModal").hidden=false}
+function renderOwnAdd(){const ul=$("ownModalList"),top=ul.scrollTop;ul.innerHTML="";const need=deckNeed(deck());
+  grouped(ul,Object.keys(_add).map(card),c=>need[c.id],c=>{const i=c.id;const w=document.createElement("span");w.className="row";w.style.cssText="flex:none;flex-wrap:nowrap;gap:6px";
+    const h=document.createElement("span");h.className="have";h.textContent=`所持${S.owned[i]||0}`;
+    w.append(h,qty(_add[i],dv=>{_add[i]=Math.max(0,Math.min(9,_add[i]+dv));renderOwnAdd()}));return li(c,w)});
+  ul.scrollTop=top;const t=Object.values(_add).reduce((a,b)=>a+b,0);$("ownModalTot").textContent=`合計${t}枚`;$("ownModalOk").disabled=!t}
+const closeOwnAdd=()=>{_add=null;$("ownModal").hidden=true};
+$("ownAll").onclick=openOwnAdd;
+$("ownModalAll").onclick=()=>{_add={..._addDef};renderOwnAdd()};
+$("ownModalNone").onclick=()=>{for(const i in _add)_add[i]=0;renderOwnAdd()};
+$("ownModalCancel").onclick=closeOwnAdd;
+$("ownModal").onclick=e=>{if(e.target===$("ownModal"))closeOwnAdd()};
+$("ownModalOk").onclick=()=>{if(!_add)return;let k=0;for(const i in _add){const n=_add[i];if(n>0&&card(i)){S.owned[i]=(S.owned[i]||0)+n;k+=n}}
+  closeOwnAdd();save(k?`所持に${k}枚追加しました`:null);renderDecks()};
 $("ownSub").onclick=()=>ownConf("sub","このデッキで使う枚数分を、所持から減らしますか？");
 $("ownCancel").onclick=ownClose;
 $("ownOk").onclick=()=>{const d=deck();if(!d||!_own)return;const need=deckNeed(d);let k=0;
   Object.entries(need).forEach(([i,n])=>{const o=S.owned[i]||0;
-    if(_own==="add"){if(o<n){S.owned[i]=n;k+=n-o}}
-    else if(o>0){const v=Math.max(0,o-n);k+=o-v;if(v)S.owned[i]=v;else delete S.owned[i]}});
-  const m=_own==="add"?(k?`所持を${k}枚増やしました`:"すべて所持済みです"):(k?`所持から${k}枚減らしました`:"減らす所持カードはありません");
+    if(o>0){const v=Math.max(0,o-n);k+=o-v;if(v)S.owned[i]=v;else delete S.owned[i]}});
+  const m=k?`所持から${k}枚減らしました`:"減らす所持カードはありません";
   ownClose();gc();save(m);renderDecks()};
 $("delDeck").onclick=()=>{$("delRow").hidden=false};
 $("delCancel").onclick=()=>{$("delRow").hidden=true};
@@ -602,7 +638,7 @@ $("pdfFile").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!
 const closePdf=()=>{_pdf=null;$("pdfModal").hidden=true};
 $("pdfCancel").onclick=closePdf;
 $("pdfModal").onclick=e=>{if(e.target===$("pdfModal"))closePdf()};
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("pdfModal").hidden)closePdf()});
+document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;if(!$("pdfModal").hidden)closePdf();if(!$("ownModal").hidden)closeOwnAdd()});
 $("pdfForm").onsubmit=e=>{e.preventDefault();const n=$("pdfName").value.trim();if(!n||!_pdf)return;
   const d={id:uid(),name:n,main:{},extra:{},side:{},inc:true};
   for(const z in _pdf)_pdf[z].forEach(c=>{let x=S.cards.find(y=>y.name===c.name);if(!x){x={id:uid(),name:c.name,type:c.t};if(c.manual)x.manual=true;S.cards.push(x)}
