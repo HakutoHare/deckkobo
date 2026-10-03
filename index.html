@@ -295,7 +295,7 @@ ul.list li:first-child{border-top:0}
 <div class="modal" id="rarModal" hidden>
   <div class="panel rmod" role="dialog" aria-modal="true" aria-labelledby="rarTitle">
     <h2 id="rarTitle"></h2>
-    <div class="sub">レア度ごとの所持枚数です。不足カードの計算には合計枚数を使います。</div>
+    <div class="sub" id="rarSub">レア度ごとの所持枚数です。不足カードの計算には合計枚数を使います。</div>
     <ul class="list" id="rarList"></ul>
     <div class="row" style="flex-wrap:nowrap">
       <span class="count" id="rarTot" style="flex:1"></span>
@@ -436,7 +436,7 @@ function renderDecks(){
   zl.hidden=curZone==="short";$("shortList").hidden=curZone!=="short";
   if(curZone!=="short"){const zk=curZone;const ids=sortIds(Object.keys(d[zk]).filter(card));
     if(!ids.length)zl.innerHTML='<li class="empty">まだカードがありません。上の検索から追加してください。</li>';
-    grouped(zl,ids.map(card),c=>d[zk][c.id],c=>{const i=c.id;return li(c,qty(d[zk][i],dv=>{const v=d[zk][i]+dv;if(v<=0){delete d[zk][i];gc()}else d[zk][i]=Math.min(3,v);save();renderDecks()}))});}
+    grouped(zl,ids.map(card),c=>d[zk][c.id],c=>{const i=c.id;return rarTap(li(c,qty(d[zk][i],dv=>{const v=d[zk][i]+dv;if(v<=0){delete d[zk][i];gc()}else d[zk][i]=Math.min(3,v);save();renderDecks()})),i)});}
   // 不足は「不足カード」タブと同じ全体の計算（集計中のデッキ＋このデッキ、設定の数え方に合わせる）で出し、このデッキで使うカードだけを並べる
   const mine=deckNeed(d),need={},uses={};
   S.decks.filter(x=>x.id===d.id||inc(x)).forEach(x=>Object.entries(deckNeed(x)).forEach(([i,n])=>{if(!mine[i])return;need[i]=reuse()?Math.max(need[i]||0,n):(need[i]||0)+n;if(x.id!==d.id)(uses[i]=uses[i]||[]).push(`${x.name}${n}枚`)}));
@@ -458,7 +458,7 @@ function renderOwned(){
   const oc=CAT.ownList;const list=S.cards.filter(c=>S.owned[c.id]&&(!oc||c.type===oc)&&match(c,q)).sort(cmp);
   if(!list.length)ul.innerHTML=Object.keys(S.owned).length?'<li class="empty">該当する所持カードはありません。</li>':'<li class="empty">所持カードはまだありません。「カードを追加」から登録してください。</li>';
   grouped(ul,list,c=>S.owned[c.id],c=>{const l=li(c,qty(S.owned[c.id],dv=>setOwned(c.id,S.owned[c.id]+dv)));
-    const nm=l.querySelector(".name");nm.classList.add("tapname");nm.setAttribute("role","button");nm.tabIndex=0;nm.title="タップでレア度ごとの枚数";nm.onclick=()=>openRar(c.id);nm.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openRar(c.id)}};return l});
+    return rarTap(l,c.id)});
 }
 let view="list",curZone="main";
 const ORDER=["monster","spell","trap","extra"];
@@ -828,9 +828,15 @@ $("imgForm").onsubmit=e=>{e.preventDefault();const n=$("imgName").value.trim();i
   for(const z in _img)_img[z].forEach(c=>{if(c.pick<0)return;const x0=c.cands[c.pick];let x=S.cards.find(y=>y.name===x0.n);if(!x){x={id:uid(),name:x0.n,type:x0.t};S.cards.push(x)}
     const zk=z==="side"?"side":(x.type==="extra"?"extra":"main");d[zk][x.id]=Math.min(3,(d[zk][x.id]||0)+c.n)});
   S.decks.push(d);closeImg();okMsg=`「${n}」を読み込みました`;openDeck(d.id)};
+// カード名をタップすると、レア度ごとの所持枚数の画面を開く（所持一覧とデッキの中身で使う）
+function rarTap(l,id){const nm=l.querySelector(".name");nm.setAttribute("role","button");nm.tabIndex=0;nm.title="タップでレア度ごとの所持枚数";nm.style.cursor="pointer";
+  nm.onclick=()=>openRar(id);nm.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openRar(id)}};return l}
 let _rar=null;
 function openRar(id){const c=card(id);if(!c)return;const r=rarOf(id),o=S.owned[id]||0;const sum=Object.values(r).reduce((a,b)=>a+b,0);
-  _rar={id,v:{"":Math.max(0,o-sum),...r}};$("rarTitle").textContent=c.name;renderRar();$("rarModal").hidden=false}
+  _rar={id,v:{"":Math.max(0,o-sum),...r}};$("rarTitle").textContent=c.name;
+  const dn=view==="edit"&&!$("tab-decks").hidden&&deck()?deckNeed(deck())[id]||0:0;
+  $("rarSub").textContent=(dn?`このデッキで${dn}枚使います。`:"")+"レア度ごとの所持枚数です。不足カードの計算には合計枚数を使います。";
+  renderRar();$("rarModal").hidden=false}
 function renderRar(){const ul=$("rarList");ul.innerHTML="";
   [["","指定なし"],...RARITY].forEach(([k,l])=>{const x=document.createElement("li");
     x.innerHTML=k?`<span class="rb rb-${k}">${k}</span><span class="name" style="color:var(--fg)">${l}</span>`:`<span class="rb" style="background:transparent;color:var(--muted);border:1px dashed var(--line)">―</span><span class="name" style="color:var(--fg)">${l}</span>`;
