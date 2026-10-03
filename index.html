@@ -549,11 +549,15 @@ function jaTokens(t){
     const nx=out[k+1];if(nx&&/^[（(「『【]/.test(nx.t)&&o.p<3)o.p=3});
   return out;
 }
+// 幅を測るための見えない span。body の外（html 直下）に置き、body の変化を見張る仕組みに引っかからないようにする
+let _msEl=null;const _ms=()=>{if(!_msEl){_msEl=document.createElement("span");_msEl.setAttribute("aria-hidden","true");_msEl.style.cssText="position:absolute;visibility:hidden;white-space:pre;left:-9999px;top:0";document.documentElement.append(_msEl)}return _msEl};
 function layoutJa(el){
   if(el.querySelector("*:not(br)")||!el.offsetParent)return;
   const t=el.textContent;if(!t)return;
-  const cs=getComputedStyle(el);_cv.font=`${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-  const W=el.clientWidth-1,ls=parseFloat(cs.letterSpacing)||0,wd=s=>_cv.measureText(s).width+ls*s.length;
+  // 幅は画面と同じフォントで測る（iPhone の canvas は日本語フォントの幅が実際の表示とずれるため、見えない span で測る）
+  const cs=getComputedStyle(el),W=el.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)-1;
+  const ms=_ms();ms.style.font=cs.font;ms.style.fontFamily=cs.fontFamily;ms.style.letterSpacing=cs.letterSpacing;
+  const memo=new Map(),wd=s=>{let v=memo.get(s);if(v==null){ms.textContent=s;v=ms.getBoundingClientRect().width;memo.set(s,v)}return v};
   let lines=[t];
   if(wd(t)>W){const tk=jaTokens(t);lines=[];let i=0;
     while(i<tk.length){let w=0,j=i,best=-1,bp=0;
