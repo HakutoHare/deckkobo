@@ -491,7 +491,7 @@ function renderDecks(){
   const rows=shortRows(S.decks.filter(x=>x.id===d.id||inc(x)),mine).filter(r=>r.lack>0&&r.uses[d.id]);const R={};
   rows.forEach(r=>{r.mineN=Math.min(r.lack,r.uses[d.id]);R[r.k]=r;tot+=r.mineN});
   grouped(sl,sortIds(rows.map(r=>r.k)).map(item),c=>R[c.id].mineN,c=>{const {k,need:n,own,lack,uses:us,mineN}=R[c.id];
-    const w=document.createElement("span");w.className="short";w.style.flex="none";w.textContent=`あと${mineN}枚`;
+    const w=document.createElement("span");w.style.cssText="flex:none;text-align:right";w.innerHTML=`<span class="short">あと${mineN}枚</span><span class="uses">所持${own}</span>`;
     const oth=Object.entries(us).filter(([did])=>did!==d.id);
     const info=(lack>mineN?`全体ではあと${lack}枚（`:"（")+`所持${own}／${oth.length?"全体で":""}必要${n}）`;
     const btns=oth.map(([did,v])=>[`${S.decks.find(x=>x.id===did).name}（${v}枚）`,()=>openDeck(did)]);
@@ -979,7 +979,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
- ["2.2.7","2026年10月4日",["デッキ画面の「不足」を見やすくしました（普段は「あと○枚」だけ。▶ で全体の不足・所持・ほかに使っているデッキを表示）"]],
+ ["2.2.7","2026年10月4日",["デッキ画面の「不足」を見やすくしました（普段は「あと○枚」と所持枚数だけ。▶ で全体の不足・ほかに使っているデッキを表示）"]],
  ["2.2.6","2026年10月4日",["デッキ画面の「不足」を、そのデッキの分だけ数えるようにしました（全体の不足は「不足カード」タブで確認できます）"]],
  ["2.2.5","2026年10月4日",["設定画面に「更新履歴」を追加しました"]],
  ["2.2.4","2026年10月4日",["不足カード一覧の開き方を、ほかの一覧とそろえました（カード名の前の ▶ をタップで開く・1枚ずつ）"]],
