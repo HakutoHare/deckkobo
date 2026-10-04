@@ -78,6 +78,9 @@ ul.list li.grouphead+li{border-top:0}
 .g-spell{background:color-mix(in srgb,var(--spell) 16%,var(--panel));color:var(--spell)}
 .g-trap{background:color-mix(in srgb,var(--trap) 16%,var(--panel));color:var(--trap)}
 .g-extra{background:color-mix(in srgb,var(--extra) 16%,var(--panel));color:var(--extra)}
+/* EX の種類ごとの見出しの色：融合=紫 シンクロ=白 エクシーズ=黒 リンク=青 */
+.list li.grouphead.gx-f{background:#7b4fb0;color:#fff}.list li.grouphead.gx-s{background:#fff;color:#333;box-shadow:inset 0 0 0 1px #c9c9d2}.list li.grouphead.gx-x{background:#26262b;color:#fff}.list li.grouphead.gx-l{background:#2f66c4;color:#fff}
+.list li.grouphead.gx-f .count,.list li.grouphead.gx-x .count,.list li.grouphead.gx-l .count{color:rgba(255,255,255,.85)}.list li.grouphead.gx-s .count{color:#666}
 .tap{cursor:pointer}.tap:hover .name{color:var(--accent)}
 .usebox{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 10px!important;border-top:0!important}
 .uses{display:block;font-size:12px;color:var(--muted)}
@@ -438,15 +441,15 @@ function qty(v,onChange){
   m.onclick=()=>onChange(-1);p.onclick=()=>onChange(1);
   w.append(m,n,p);return w;
 }
-function band(ul,ty,right,label){const h=document.createElement("li");h.className="grouphead g-"+ty;h.tabIndex=0;h.setAttribute("role","button");h.innerHTML=`<span class="glab">${label||TYPE[ty]}</span><span class="count">${right}</span>`;
+function band(ul,ty,right,label,sub){const h=document.createElement("li");h.className="grouphead g-"+ty+(sub&&sub!=="o"?" gx-"+sub:"");h.tabIndex=0;h.setAttribute("role","button");h.innerHTML=`<span class="glab">${label||TYPE[ty]}</span><span class="count">${right}</span>`;
   const go=()=>ul.scrollTo({top:h.offsetTop,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});h.onclick=go;h.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}};ul.append(h)}
 // 見出しの区切り：モンスター・魔法・罠、EX は融合・シンクロ・エクシーズ・リンクに分ける（extsub.json）
 const EXSUB=[["f","融合"],["s","シンクロ"],["x","エクシーズ"],["l","リンク"],["o","EX"]];
 const exsub=c=>EXS[c.name]||"o";
 function groupsOf(cards){const out=[];ORDER.forEach(ty=>{const g=cards.filter(c=>c.type===ty);if(!g.length)return;
   if(ty!=="extra"){out.push([ty,TYPE[ty],g]);return}
-  EXSUB.forEach(([k,l])=>{const h=g.filter(c=>exsub(c)===k);if(h.length)out.push([ty,k==="o"?"EX":"EX・"+l,h])})});return out}
-function grouped(ul,cards,countOf,row){groupsOf(cards).forEach(([ty,label,g])=>{band(ul,ty,`${g.length}種・${g.reduce((a,c)=>a+countOf(c),0)}枚`,label);g.forEach(c=>{const r=row(c);Array.isArray(r)?ul.append(...r):ul.append(r)})})}
+  EXSUB.forEach(([k,l])=>{const h=g.filter(c=>exsub(c)===k);if(h.length)out.push([ty,k==="o"?"EX":"EX・"+l,h,k])})});return out}
+function grouped(ul,cards,countOf,row){groupsOf(cards).forEach(([ty,label,g,sub])=>{band(ul,ty,`${g.length}種・${g.reduce((a,c)=>a+countOf(c),0)}枚`,label,sub);g.forEach(c=>{const r=row(c);Array.isArray(r)?ul.append(...r):ul.append(r)})})}
 function li(c,extra){
   const l=document.createElement("li");
   // 読み仮名がカード名と違うときだけ、名前の上に小さく出す
@@ -567,10 +570,10 @@ function renderShort(){
   // 買う予定の枚数は不足分まで。足りたカードや一覧から消えたカードの分は捨てる
   const lacks=Object.fromEntries(rows.map(r=>[r[0],r[2]]));for(const i in _buy){_buy[i]=Math.min(_buy[i],lacks[i]||0);if(!_buy[i])delete _buy[i]}
   const byKey=Object.fromEntries(rows.map(r=>[r[0],r]));
-  groupsOf(rows.map(r=>item(r[0])).filter(c=>!CAT.short||c.type===CAT.short).sort(cmp)).forEach(([ty,label,gc])=>{
+  groupsOf(rows.map(r=>item(r[0])).filter(c=>!CAT.short||c.type===CAT.short).sort(cmp)).forEach(([ty,label,gc,xs])=>{
     const g=gc.map(c=>byKey[c.id]);
     const sub=g.reduce((a,r)=>a+r[2],0);
-    const h=document.createElement("li");h.className="grouphead g-"+ty;h.tabIndex=0;h.setAttribute("role","button");h.title="このカテゴリの先頭へ";{const go=()=>ul.scrollTo({top:h.offsetTop,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});h.onclick=go;h.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}}}h.innerHTML=`<span class="glab">${label}</span><span class="count">${g.length}種・${sub}枚</span>`;ul.append(h);
+    const h=document.createElement("li");h.className="grouphead g-"+ty+(xs&&xs!=="o"?" gx-"+xs:"");h.tabIndex=0;h.setAttribute("role","button");h.title="このカテゴリの先頭へ";{const go=()=>ul.scrollTo({top:h.offsetTop,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});h.onclick=go;h.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}}}h.innerHTML=`<span class="glab">${label}</span><span class="count">${g.length}種・${sub}枚</span>`;ul.append(h);
     g.forEach(([i,n,lack,own,us])=>{
       tot+=lack;const w=document.createElement("span");w.style.textAlign="right";
       w.innerHTML=`<span class="short">あと${lack}枚</span><span class="uses">所持${own}／必要${n}</span>`;
@@ -1004,6 +1007,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.3.1","2026年10月4日",["EX の見出しを種類ごとに色分けしました（融合＝紫、シンクロ＝白、エクシーズ＝黒、リンク＝青）"]],
  ["2.3.0","2026年10月4日",["エクストラデッキのカードを、融合・シンクロ・エクシーズ・リンクに分けて表示するようにしました"]],
  ["2.2.9","2026年10月4日",["「画像」ボタンを押したときに、読み込める画像（大会提出用の用紙のみ）の案内を出すようにしました"]],
  ["2.2.8","2026年10月4日",["デッキ画面の「不足」に所持枚数を表示するようにしました"]],
