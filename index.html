@@ -551,12 +551,9 @@ function renderShort(){
       const q=qty(_buy[i]||0,dv=>{const v=Math.max(0,Math.min(lack,(_buy[i]||0)+dv));if(v)_buy[i]=v;else delete _buy[i];renderShort()});
       q.querySelectorAll("button").forEach((x,k)=>x.setAttribute("aria-label",k?"追加する枚数を増やす":"追加する枚数を減らす"));q.onclick=e=>e.stopPropagation();q.onkeydown=e=>e.stopPropagation();
       const wr=document.createElement("span");wr.className="row";wr.style.cssText="flex:none;flex-wrap:nowrap;gap:8px";wr.append(w,q);
-      const l=li(item(i),wr);l.classList.add("tap");l.tabIndex=0;l.setAttribute("role","button");l.setAttribute("aria-expanded","false");
-      const box=document.createElement("li");box.className="usebox";box.hidden=true;const ct=document.createElement("div");ct.className="ctext";ct.style.flexBasis="100%";ct.hidden=true;box.append(ct);
-      Object.entries(us).forEach(([did,v])=>{const d=S.decks.find(x=>x.id===did);const b=document.createElement("button");b.className="btn ghost";b.textContent=`${d.name}（${v}枚）`;b.onclick=()=>{goTab("decks");openDeck(did)};box.append(b)});
-      const tg=()=>{box.hidden=!box.hidden;l.setAttribute("aria-expanded",!box.hidden);if(!box.hidden)showText(ct,card(i))};
-      l.onclick=tg;l.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();tg()}};
-      ul.append(l,box);
+      // ほかの一覧と同じく、カード名のタップで効果と「使っているデッキ」のボタンを開く（1枚ずつ）
+      const btns=Object.entries(us).map(([did,v])=>[`${S.decks.find(x=>x.id===did).name}（${v}枚）`,()=>{goTab("decks");openDeck(did)}]);
+      ul.append(...detailRow(ul,li(item(i),wr),"short",i,item(i),btns));
     });
   });
   $("totShortCount").textContent=tot?`計${tot}枚`:"";
