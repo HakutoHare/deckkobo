@@ -322,6 +322,18 @@ ul.list li:first-child{border-top:0}
   </div>
 </div>
 
+<div class="modal" id="imgGuide" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="imgGuideTitle">
+    <h2 id="imgGuideTitle">画像から読み込み</h2>
+    <div class="sub">読み込めるのは、遊戯王ニューロンの大会提出用デッキリスト（表の形の用紙）を画像にしたものだけです。カードの絵が並んだデッキ画面のスクリーンショットは読めません。</div>
+    <div class="sub">読み取ったあとに確認画面が出るので、違うカードを直してから登録してください。PDF があれば、PDF から読み込むほうが正確です。</div>
+    <div class="row" style="justify-content:flex-end">
+      <button type="button" class="btn ghost sm" id="imgGuideCancel">やめる</button>
+      <button type="button" class="btn sm" id="imgGuideOk">画像を選ぶ</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="txtModal" hidden>
   <form class="panel" id="txtForm" role="dialog" aria-modal="true" aria-labelledby="txtTitle">
     <h2 id="txtTitle">文章から読み込み</h2>
@@ -773,7 +785,7 @@ $("pdfFile").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!
 const closePdf=()=>{_pdf=null;$("pdfModal").hidden=true};
 $("pdfCancel").onclick=closePdf;
 $("pdfModal").onclick=e=>{if(e.target===$("pdfModal"))closePdf()};
-document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;if(!$("logModal").hidden)$("logModal").hidden=true;if(!$("txtModal").hidden)$("txtModal").hidden=true;if(!$("rarModal").hidden)$("rarCancel").onclick();if(!$("imgModal").hidden)closeImg();if(!$("pdfModal").hidden)closePdf();if(!$("ownModal").hidden)closeOwnAdd()});
+document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;if(!$("imgGuide").hidden)$("imgGuide").hidden=true;if(!$("logModal").hidden)$("logModal").hidden=true;if(!$("txtModal").hidden)$("txtModal").hidden=true;if(!$("rarModal").hidden)$("rarCancel").onclick();if(!$("imgModal").hidden)closeImg();if(!$("pdfModal").hidden)closePdf();if(!$("ownModal").hidden)closeOwnAdd()});
 $("pdfForm").onsubmit=e=>{e.preventDefault();const n=$("pdfName").value.trim();if(!n||!_pdf)return;
   const d={id:uid(),name:n,main:{},extra:{},side:{},inc:true};
   for(const z in _pdf)_pdf[z].forEach(c=>{let x=S.cards.find(y=>y.name===c.name);if(!x){x={id:uid(),name:c.name,type:c.t};if(c.manual)x.manual=true;S.cards.push(x)}
@@ -799,6 +811,9 @@ function findGrid(g,W,H){
   const top=lines.filter(l=>l.x1-l.x0>wmax*.85),bot=lines.filter(l=>l.x1-l.x0<=wmax*.85&&l.x1-l.x0>wmax*.5&&l.y>(top.length?top[top.length-1].y:0));
   const vlines=(ys)=>{const y0=Math.round(ys[0]),y1=Math.round(ys[ys.length-1]),need=(y1-y0)*.8,xs=[];
     for(let x=0;x<W;x++){let c=0;for(let y=y0;y<=y1;y++)if(dark(x,y))c++;if(c>=need)xs.push({x})}return merge(xs,"x").map(v=>v.x)};
+  // 大会提出用の用紙なら、上の表は見出し・30行・合計で、同じ高さの行が20行以上並ぶ。そうでなければ用紙ではないとみなす
+  const even=ls=>{if(ls.length<20)return false;const d=ls.slice(1).map((l,i)=>l.y-ls[i].y).sort((a,b)=>a-b),m=d[d.length>>1];return d.filter(x=>Math.abs(x-m)<=m*.25).length>=d.length*.8};
+  if(!even(top))return null;
   const out={};
   if(top.length>=5){const v=vlines(top.map(l=>l.y));if(v.length>=7)out.top={rows:top.map(l=>l.y),v:v.slice(0,7)}}
   if(bot.length>=5){const v=vlines(bot.map(l=>l.y));if(v.length>=5)out.bot={rows:bot.map(l=>l.y),v:v.slice(0,5)}}
@@ -876,13 +891,16 @@ function renderImg(){const ul=$("imgList");ul.innerHTML="";
         box.append(inp,res);l.append(box);setTimeout(()=>{noZoom(inp);inp.focus()},0)}
       ul.append(l)})});
 }
-$("imgBtn").onclick=()=>$("imgFile").click();
+$("imgBtn").onclick=()=>{$("imgGuide").hidden=false};
+$("imgGuideCancel").onclick=()=>{$("imgGuide").hidden=true};
+$("imgGuide").onclick=e=>{if(e.target===$("imgGuide"))$("imgGuide").hidden=true};
+$("imgGuideOk").onclick=()=>{$("imgGuide").hidden=true;$("imgFile").click()};
 $("imgFile").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;_imgFrom="img";
   $("imgTitle").textContent="画像から読み込み";$("imgList").innerHTML="";$("imgName").hidden=true;$("imgOk").hidden=true;$("imgModal").hidden=false;
   const prog=t=>{$("imgSum").textContent=t};prog("画像を調べています…");
   let r=null;try{r=await readSheetImage(f,prog)}catch(err){closeImg();toast("画像を読み込めませんでした","ネットにつながった状態で、もう一度お試しください（初回は読み取りの部品を取得します）。");return}
   if($("imgModal").hidden)return; // 途中でやめた
-  if(!r){closeImg();toast("デッキリストを見つけられませんでした","大会提出用のデッキリストの画像を、表全体が入るように選んでください。");return}
+  if(!r){closeImg();toast("デッキリストを見つけられませんでした","読み込めるのは大会提出用のデッキリスト（用紙）の画像だけです。表全体が入った画像を選んでください。カードの絵が並んだスクリーンショットは読めません。");return}
   _img=r;const low=Object.values(r).flat().filter(c=>c.pick<0||c.cands[c.pick].s<.6).length;
   prog(`読み取った結果です。赤い欄は自信が低いので、正しいカードを選び直してください${low?`（${low}か所）`:""}。`);
   renderImg();$("imgName").value="";$("imgName").hidden=false;$("imgOk").hidden=false};
@@ -979,6 +997,8 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.2.9","2026年10月4日",["「画像」ボタンを押したときに、読み込める画像（大会提出用の用紙のみ）の案内を出すようにしました"]],
+ ["2.2.8","2026年10月4日",["デッキ画面の「不足」に所持枚数を表示するようにしました"]],
  ["2.2.7","2026年10月4日",["デッキ画面の「不足」を見やすくしました（普段は「あと○枚」と所持枚数だけ。▶ で全体の不足・ほかに使っているデッキを表示）"]],
  ["2.2.6","2026年10月4日",["デッキ画面の「不足」を、そのデッキの分だけ数えるようにしました（全体の不足は「不足カード」タブで確認できます）"]],
  ["2.2.5","2026年10月4日",["設定画面に「更新履歴」を追加しました"]],
