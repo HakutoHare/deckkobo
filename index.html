@@ -113,7 +113,7 @@ ul.list li:first-child{border-top:0}
 .cats .toggle{font-size:12px;padding:2px 9px}
 </style>
 <style>html{box-sizing:border-box;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);color-scheme:light}body{margin:0;font-size:14px;-webkit-text-size-adjust:100%}*,*::before,*::after{box-sizing:inherit}[hidden]{display:none!important}</style>
-<style>.rb{display:inline-block;font-size:9px;font-weight:700;line-height:1;padding:2px 3px;border-radius:3px;margin-right:2px;vertical-align:1px;color:#fff;background:#8a8a99;font-family:var(--f-num);letter-spacing:0}.rb-N{background:#9a9aa6}.rb-R{background:#6f8fb3}.rb-SR{background:#4a7fc1}.rb-UR{background:#c99a17}.rb-SE{background:linear-gradient(90deg,#d9466f,#e0a020,#3aa76d,#3b7dd8)}.rb-PSE{background:linear-gradient(90deg,#7b5bd6,#d65bb4)}.rb-UL{background:#a0743a}.rb-CR{background:#5a6b7a}.rb-HR{background:linear-gradient(90deg,#b8902a,#e6c45c)}.rb-QCSE{background:linear-gradient(90deg,#2b2b2b,#9a7b2e)}.rb-PE{background:#2f8f8f}.rb-KC{background:#444}.rmod li{gap:8px}#rarList{max-height:34vh}.ctext{background:var(--bg);border-radius:8px;padding:6px 8px;font-size:12px;line-height:1.5;max-height:28vh;overflow:auto;overscroll-behavior:contain;white-space:pre-wrap;flex:none}.ctext b{display:block;font-size:11px;color:var(--muted);font-weight:700;margin-bottom:2px}.rmod .rb{font-size:11px;padding:3px 5px;min-width:3.4em;text-align:center}.yomi{display:block;font-size:10px;line-height:1.3;color:var(--muted);font-weight:400}.btn:disabled{opacity:.4;cursor:default}.hdr{flex-wrap:nowrap;gap:4px}.hdr .btn{white-space:nowrap;padding:3px 6px;flex:none;font-size:clamp(10px,3.1vw,12px)}.modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}.modal .panel{width:100%;max-width:420px;max-height:100%;overflow:auto}.modal .list{max-height:52vh;overflow:auto}.modal .have{color:var(--muted);font-size:12px;font-family:var(--f-num);white-space:nowrap}.imgrow{flex-wrap:wrap!important}.imgrow .ocr{flex-basis:100%;font-size:11px;color:var(--muted)}.imgrow select{flex:1;min-width:0;height:30px;font-size:13px}.imgrow select.low{border-color:var(--warn);color:var(--warn)}.zonehead{font-weight:700;font-size:13px;color:var(--muted);padding-top:8px!important}.modal .miss{color:var(--warn);font-size:13px;max-height:8em;overflow:auto;overflow-wrap:anywhere}</style>
+<style>.rb{display:inline-block;font-size:9px;font-weight:700;line-height:1;padding:2px 3px;border-radius:3px;margin-right:2px;vertical-align:1px;color:#fff;background:#8a8a99;font-family:var(--f-num);letter-spacing:0}.rb-N{background:#9a9aa6}.rb-R{background:#6f8fb3}.rb-SR{background:#4a7fc1}.rb-UR{background:#c99a17}.rb-SE{background:linear-gradient(90deg,#d9466f,#e0a020,#3aa76d,#3b7dd8)}.rb-PSE{background:linear-gradient(90deg,#7b5bd6,#d65bb4)}.rb-UL{background:#a0743a}.rb-CR{background:#5a6b7a}.rb-HR{background:linear-gradient(90deg,#b8902a,#e6c45c)}.rb-QCSE{background:linear-gradient(90deg,#2b2b2b,#9a7b2e)}.rb-PE{background:#2f8f8f}.rb-KC{background:#444}.rmod li{gap:8px}#rarList{max-height:34vh}.dmark{color:var(--muted);font-size:11px}.ctext{background:var(--bg);border-radius:8px;padding:6px 8px;font-size:12px;line-height:1.5;max-height:28vh;overflow:auto;overscroll-behavior:contain;white-space:pre-wrap;flex:none}.ctext b{display:block;font-size:11px;color:var(--muted);font-weight:700;margin-bottom:2px}.rmod .rb{font-size:11px;padding:3px 5px;min-width:3.4em;text-align:center}.yomi{display:block;font-size:10px;line-height:1.3;color:var(--muted);font-weight:400}.btn:disabled{opacity:.4;cursor:default}.hdr{flex-wrap:nowrap;gap:4px}.hdr .btn{white-space:nowrap;padding:3px 6px;flex:none;font-size:clamp(10px,3.1vw,12px)}.modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}.modal .panel{width:100%;max-width:420px;max-height:100%;overflow:auto}.modal .list{max-height:52vh;overflow:auto}.modal .have{color:var(--muted);font-size:12px;font-family:var(--f-num);white-space:nowrap}.imgrow{flex-wrap:wrap!important}.imgrow .ocr{flex-basis:100%;font-size:11px;color:var(--muted)}.imgrow select{flex:1;min-width:0;height:30px;font-size:13px}.imgrow select.low{border-color:var(--warn);color:var(--warn)}.zonehead{font-weight:700;font-size:13px;color:var(--muted);padding-top:8px!important}.modal .miss{color:var(--warn);font-size:13px;max-height:8em;overflow:auto;overflow-wrap:anywhere}</style>
 </head>
 <body>
 
@@ -268,7 +268,7 @@ ul.list li:first-child{border-top:0}
     </div>
     <div class="panel grow" id="ownListView" hidden>
       <input type="search" id="ownedFilter" placeholder="所持カードを絞り込み">
-      <div class="sub">カード名をタップすると、レア度ごとの枚数を登録できます。</div>
+      <div class="sub">カード名をタップすると、効果とレア度の変更ボタンが出ます。</div>
       <div class="hscroll cats" data-k="ownList"></div>
       <ul class="list" id="ownedList"></ul>
     </div>
@@ -347,6 +347,8 @@ const sample=()=>{
   return {cards:c,decks:[d],owned,cur:d.id,isSample:true};
 };
 let S={cards:[],decks:[],owned:{},cur:null},ref=null,saveTimer=null;
+// 最初の画面を描く前に使うので、ここで用意する（開いている詳細、効果文のデータ）
+const OPEN={};let TEXT=null,_textP=null;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[m]);
 const card=id=>S.cards.find(c=>c.id===kid(id));
@@ -392,7 +394,7 @@ function qty(v,onChange){
 }
 function band(ul,ty,right){const h=document.createElement("li");h.className="grouphead g-"+ty;h.tabIndex=0;h.setAttribute("role","button");h.innerHTML=`<span class="glab">${TYPE[ty]}</span><span class="count">${right}</span>`;
   const go=()=>ul.scrollTo({top:h.offsetTop,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});h.onclick=go;h.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}};ul.append(h)}
-function grouped(ul,cards,countOf,row){ORDER.forEach(ty=>{const g=cards.filter(c=>c.type===ty);if(!g.length)return;band(ul,ty,`${g.length}種・${g.reduce((a,c)=>a+countOf(c),0)}枚`);g.forEach(c=>ul.append(row(c)))})}
+function grouped(ul,cards,countOf,row){ORDER.forEach(ty=>{const g=cards.filter(c=>c.type===ty);if(!g.length)return;band(ul,ty,`${g.length}種・${g.reduce((a,c)=>a+countOf(c),0)}枚`);g.forEach(c=>{const r=row(c);Array.isArray(r)?ul.append(...r):ul.append(r)})})}
 function li(c,extra){
   const l=document.createElement("li");
   // 読み仮名がカード名と違うときだけ、名前の上に小さく出す
@@ -444,7 +446,7 @@ function renderDecks(){
   zl.hidden=curZone==="short";$("shortList").hidden=curZone!=="short";
   if(curZone!=="short"){const zk=curZone;const ids=sortIds(Object.keys(d[zk]).filter(card));
     if(!ids.length)zl.innerHTML='<li class="empty">まだカードがありません。上の検索から追加してください。</li>';
-    grouped(zl,ids.map(item),c=>d[zk][c.id],c=>{const i=c.id;return rarTap(li(c,qty(d[zk][i],dv=>{if(dv>0&&deckCnt(d,kid(i))>=3){toast(MAX3,"レア度が違っても同じカードとして数えます。");return}const v=d[zk][i]+dv;if(v<=0){delete d[zk][i];gc()}else d[zk][i]=v;save();renderDecks()})),()=>openDeckRar(zk,kid(i)))});}
+    grouped(zl,ids.map(item),c=>d[zk][c.id],c=>{const i=c.id;return detailRow(zl,li(c,qty(d[zk][i],dv=>{if(dv>0&&deckCnt(d,kid(i))>=3){toast(MAX3,"レア度が違っても同じカードとして数えます。");return}const v=d[zk][i]+dv;if(v<=0){delete d[zk][i];gc()}else d[zk][i]=v;save();renderDecks()})),"deck:"+zk,i,c,[["レア度を変更",()=>openDeckRar(zk,kid(i))]])});}
   // 不足は「不足カード」タブと同じ全体の計算（集計中のデッキ＋このデッキ、設定の数え方に合わせる）で出し、このデッキで使うカードだけを並べる
   const mine=new Set(Object.keys(deckNeed(d)).map(kid));
   const sl=$("shortList");sl.innerHTML="";let tot=0;
@@ -467,7 +469,7 @@ function renderOwned(){
   $("ownedCount").textContent=Object.values(S.owned).reduce((a,b)=>a+b,0)+"枚";
   const oc=CAT.ownList;const list=Object.keys(S.owned).filter(k=>S.owned[k]>0).map(item).filter(c=>c&&(!oc||c.type===oc)&&match(c,q)).sort(cmp);
   if(!list.length)ul.innerHTML=Object.keys(S.owned).length?'<li class="empty">該当する所持カードはありません。</li>':'<li class="empty">所持カードはまだありません。「カードを追加」から登録してください。</li>';
-  grouped(ul,list,c=>S.owned[c.id],c=>rarTap(li(c,qty(S.owned[c.id],dv=>setOwned(c.id,S.owned[c.id]+dv))),()=>openOwnRar(kid(c.id))));
+  grouped(ul,list,c=>S.owned[c.id],c=>detailRow(ul,li(c,qty(S.owned[c.id],dv=>setOwned(c.id,S.owned[c.id]+dv))),"own",c.id,c,[["レア度を変更",()=>openOwnRar(kid(c.id))]]));
 }
 let view="list",curZone="main";
 const ORDER=["monster","spell","trap","extra"];
@@ -853,12 +855,17 @@ $("imgForm").onsubmit=e=>{e.preventDefault();const n=$("imgName").value.trim();i
   for(const z in _img)_img[z].forEach(c=>{if(c.pick<0)return;const x0=c.cands[c.pick];let x=S.cards.find(y=>y.name===x0.n);if(!x){x={id:uid(),name:x0.n,type:x0.t};S.cards.push(x)}
     const zk=z==="side"?"side":(x.type==="extra"?"extra":"main");addToDeck(d,zk,x.id,c.n)});
   S.decks.push(d);closeImg();okMsg=`「${n}」を読み込みました`;openDeck(d.id)};
-// カード名をタップすると、レア度ごとの枚数の画面を開く（所持一覧とデッキの中身で使う）
-function rarTap(l,fn){const nm=l.querySelector(".name");nm.setAttribute("role","button");nm.tabIndex=0;nm.title="タップでレア度ごとの枚数";nm.style.cursor="pointer";
-  nm.onclick=fn;nm.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();fn()}};return l}
-// 枚数の画面。vals={レア度:枚数}（""は指定なし）、max は合計の上限、onSave に決めた枚数を渡す
+// カード名をタップすると、行の下に詳細（効果文と操作ボタン）が開く。開くのは一覧ごとに1枚だけ
+function detailRow(ul,l,listId,k,c,buttons){const nm=l.querySelector(".name");nm.setAttribute("role","button");nm.tabIndex=0;nm.style.cursor="pointer";
+  const mark=document.createElement("span");mark.className="dmark";nm.append(mark);
+  const box=document.createElement("li");box.className="usebox detail";const ct=document.createElement("div");ct.className="ctext";ct.style.flexBasis="100%";box.append(ct);
+  buttons.forEach(([label,fn])=>{const b=document.createElement("button");b.type="button";b.className="btn ghost sm";b.textContent=label;b.onclick=fn;box.append(b)});
+  const set=open=>{box.hidden=!open;mark.textContent=open?" ▴":" ▾";nm.setAttribute("aria-expanded",open);if(open)showText(ct,c,()=>!box.hidden)};
+  set(OPEN[listId]===k);
+  const tg=()=>{const open=box.hidden;ul.querySelectorAll("li.detail").forEach(x=>{if(x!==box&&!x.hidden){x.hidden=true;const m=x.previousElementSibling?.querySelector(".dmark");if(m)m.textContent=" ▾"}});OPEN[listId]=open?k:null;set(open)};
+  nm.onclick=tg;nm.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();tg()}};
+  return [l,box]}
 // カードの効果文（cardtext.json、約7MB・通信は圧縮で約1MB）。初めて見るときに取得し、以後は端末に保存したものを使う
-let TEXT=null,_textP=null;
 const loadText=()=>_textP||(_textP=fetch("cardtext.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>TEXT=j).catch(e=>{_textP=null;throw e}));
 // el に効果を出す。読み込みを待つ間に別のカードの表示へ変わっていたら（ok() が false）書き込まない
 function showText(el,c,ok=()=>true){el.hidden=false;
@@ -877,9 +884,9 @@ function renderRar(){const ul=$("rarList");ul.innerHTML="";const tot=Object.valu
 const valsOf=(obj,id)=>{const v={};for(const k in obj)if(kid(k)===id&&obj[k]>0)v[krar(k)]=obj[k];return v};
 const putVals=(obj,id,v)=>{for(const k in obj)if(kid(k)===id)delete obj[k];for(const r in v)if(v[r]>0)obj[mkKey(id,r)]=v[r]};
 function openOwnRar(id){const c=card(id);if(!c)return;
-  openAlloc(c.name,"レア度ごとの所持枚数です。レア度が違うカードは別枠として数えます。",valsOf(S.owned,id),99,v=>{putVals(S.owned,id,v);gc();save();render()},c)}
+  openAlloc(c.name,"レア度ごとの所持枚数です。レア度が違うカードは別枠として数えます。",valsOf(S.owned,id),99,v=>{putVals(S.owned,id,v);gc();save();render()})}
 function openDeckRar(zk,id){const d=deck(),c=card(id);if(!d||!c)return;const v=valsOf(d[zk],id),cur=Object.values(v).reduce((a,b)=>a+b,0);
-  openAlloc(c.name,`このデッキの${ZONE[zk]}に入れるレア度ごとの枚数です。同じカードはデッキ全体で3枚までです。`,v,3-(deckCnt(d,id)-cur),v2=>{putVals(d[zk],id,v2);gc();save();renderDecks()},c)}
+  openAlloc(c.name,`このデッキの${ZONE[zk]}に入れるレア度ごとの枚数です。同じカードはデッキ全体で3枚までです。`,v,3-(deckCnt(d,id)-cur),v2=>{putVals(d[zk],id,v2);gc();save();renderDecks()})}
 $("rarCancel").onclick=()=>{_rar=null;$("rarModal").hidden=true};
 $("rarModal").onclick=e=>{if(e.target===$("rarModal"))$("rarCancel").onclick()};
 $("rarOk").onclick=()=>{if(!_rar)return;const {v,onSave}=_rar;_rar=null;$("rarModal").hidden=true;onSave(v)};

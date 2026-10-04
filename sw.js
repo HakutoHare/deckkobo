@@ -1,5 +1,5 @@
 // デッキ工房 オフライン用。更新時は VERSION を上げる
-const VERSION="2.1.0";
+const VERSION="2.1.1";
 const CACHE="deckkobo-"+VERSION;
 const OCR="dkocr-5.1.1"; // 画像読み込みの部品を入れ替えたら名前を変える
 const TEXT="dktext-20260924"; // 効果文（cardtext.json）を作り直したら名前を変える
