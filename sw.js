@@ -1,9 +1,9 @@
 // デッキ工房 オフライン用。更新時は VERSION を上げる
-const VERSION="2.1.2";
+const VERSION="2.2.0";
 const CACHE="deckkobo-"+VERSION;
 const OCR="dkocr-5.1.1"; // 画像読み込みの部品を入れ替えたら名前を変える
 const TEXT="dktext-20260924"; // 効果文（cardtext.json）を作り直したら名前を変える
-const FILES=["./","index.html","cardlist.json","manifest.webmanifest","icon-192.png","icon-512.png","apple-touch-icon.png","lib/pdf.min.mjs","lib/pdf.worker.min.mjs","lib/cmaps/UniJIS-UCS2-H.bcmap","lib/cmaps/Adobe-Japan1-UCS2.bcmap"];
+const FILES=["./","index.html","cardlist.json","limit.json","manifest.webmanifest","icon-192.png","icon-512.png","apple-touch-icon.png","lib/pdf.min.mjs","lib/pdf.worker.min.mjs","lib/cmaps/UniJIS-UCS2-H.bcmap","lib/cmaps/Adobe-Japan1-UCS2.bcmap"];
 // 保存するときは、ブラウザや配信元に残っている古いファイルを使わず、必ず最新を取り直す
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES.map(f=>new Request(f,{cache:"reload"})))))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>(k.startsWith("deckkobo-")&&k!==CACHE||k.startsWith("dkocr-")&&k!==OCR||k.startsWith("dktext-")&&k!==TEXT)).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
