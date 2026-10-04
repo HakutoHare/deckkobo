@@ -113,7 +113,7 @@ ul.list li:first-child{border-top:0}
 .cats .toggle{font-size:12px;padding:2px 9px}
 </style>
 <style>html{box-sizing:border-box;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);color-scheme:light}body{margin:0;font-size:14px;-webkit-text-size-adjust:100%}*,*::before,*::after{box-sizing:inherit}[hidden]{display:none!important}</style>
-<style>.rb{display:inline-block;font-size:9px;font-weight:700;line-height:1;padding:2px 3px;border-radius:3px;margin-right:2px;vertical-align:1px;color:#fff;background:#8a8a99;font-family:var(--f-num);letter-spacing:0}.rb-N{background:#9a9aa6}.rb-R{background:#6f8fb3}.rb-SR{background:#4a7fc1}.rb-UR{background:#c99a17}.rb-SE{background:linear-gradient(90deg,#d9466f,#e0a020,#3aa76d,#3b7dd8)}.rb-PSE{background:linear-gradient(90deg,#7b5bd6,#d65bb4)}.rb-UL{background:#a0743a}.rb-CR{background:#5a6b7a}.rb-HR{background:linear-gradient(90deg,#b8902a,#e6c45c)}.rb-QCSE{background:linear-gradient(90deg,#2b2b2b,#9a7b2e)}.rb-PE{background:#2f8f8f}.rb-KC{background:#444}.rmod li{gap:8px}.rmod .rb{font-size:11px;padding:3px 5px;min-width:3.4em;text-align:center}.yomi{display:block;font-size:10px;line-height:1.3;color:var(--muted);font-weight:400}.btn:disabled{opacity:.4;cursor:default}.hdr{flex-wrap:nowrap;gap:4px}.hdr .btn{white-space:nowrap;padding:3px 6px;flex:none;font-size:clamp(10px,3.1vw,12px)}.modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}.modal .panel{width:100%;max-width:420px;max-height:100%;overflow:auto}.modal .list{max-height:52vh;overflow:auto}.modal .have{color:var(--muted);font-size:12px;font-family:var(--f-num);white-space:nowrap}.imgrow{flex-wrap:wrap!important}.imgrow .ocr{flex-basis:100%;font-size:11px;color:var(--muted)}.imgrow select{flex:1;min-width:0;height:30px;font-size:13px}.imgrow select.low{border-color:var(--warn);color:var(--warn)}.zonehead{font-weight:700;font-size:13px;color:var(--muted);padding-top:8px!important}.modal .miss{color:var(--warn);font-size:13px;max-height:8em;overflow:auto;overflow-wrap:anywhere}</style>
+<style>.rb{display:inline-block;font-size:9px;font-weight:700;line-height:1;padding:2px 3px;border-radius:3px;margin-right:2px;vertical-align:1px;color:#fff;background:#8a8a99;font-family:var(--f-num);letter-spacing:0}.rb-N{background:#9a9aa6}.rb-R{background:#6f8fb3}.rb-SR{background:#4a7fc1}.rb-UR{background:#c99a17}.rb-SE{background:linear-gradient(90deg,#d9466f,#e0a020,#3aa76d,#3b7dd8)}.rb-PSE{background:linear-gradient(90deg,#7b5bd6,#d65bb4)}.rb-UL{background:#a0743a}.rb-CR{background:#5a6b7a}.rb-HR{background:linear-gradient(90deg,#b8902a,#e6c45c)}.rb-QCSE{background:linear-gradient(90deg,#2b2b2b,#9a7b2e)}.rb-PE{background:#2f8f8f}.rb-KC{background:#444}.rmod li{gap:8px}#rarList{max-height:34vh}.ctext{background:var(--bg);border-radius:8px;padding:6px 8px;font-size:12px;line-height:1.5;max-height:28vh;overflow:auto;overscroll-behavior:contain;white-space:pre-wrap;flex:none}.ctext b{display:block;font-size:11px;color:var(--muted);font-weight:700;margin-bottom:2px}.rmod .rb{font-size:11px;padding:3px 5px;min-width:3.4em;text-align:center}.yomi{display:block;font-size:10px;line-height:1.3;color:var(--muted);font-weight:400}.btn:disabled{opacity:.4;cursor:default}.hdr{flex-wrap:nowrap;gap:4px}.hdr .btn{white-space:nowrap;padding:3px 6px;flex:none;font-size:clamp(10px,3.1vw,12px)}.modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}.modal .panel{width:100%;max-width:420px;max-height:100%;overflow:auto}.modal .list{max-height:52vh;overflow:auto}.modal .have{color:var(--muted);font-size:12px;font-family:var(--f-num);white-space:nowrap}.imgrow{flex-wrap:wrap!important}.imgrow .ocr{flex-basis:100%;font-size:11px;color:var(--muted)}.imgrow select{flex:1;min-width:0;height:30px;font-size:13px}.imgrow select.low{border-color:var(--warn);color:var(--warn)}.zonehead{font-weight:700;font-size:13px;color:var(--muted);padding-top:8px!important}.modal .miss{color:var(--warn);font-size:13px;max-height:8em;overflow:auto;overflow-wrap:anywhere}</style>
 </head>
 <body>
 
@@ -295,6 +295,7 @@ ul.list li:first-child{border-top:0}
 <div class="modal" id="rarModal" hidden>
   <div class="panel rmod" role="dialog" aria-modal="true" aria-labelledby="rarTitle">
     <h2 id="rarTitle"></h2>
+    <div class="ctext" id="rarText" hidden></div>
     <div class="sub" id="rarSub">レア度ごとの所持枚数です。不足カードの計算には合計枚数を使います。</div>
     <ul class="list" id="rarList"></ul>
     <div class="row" style="flex-wrap:nowrap">
@@ -520,9 +521,9 @@ function renderShort(){
       q.querySelectorAll("button").forEach((x,k)=>x.setAttribute("aria-label",k?"追加する枚数を増やす":"追加する枚数を減らす"));q.onclick=e=>e.stopPropagation();q.onkeydown=e=>e.stopPropagation();
       const wr=document.createElement("span");wr.className="row";wr.style.cssText="flex:none;flex-wrap:nowrap;gap:8px";wr.append(w,q);
       const l=li(item(i),wr);l.classList.add("tap");l.tabIndex=0;l.setAttribute("role","button");l.setAttribute("aria-expanded","false");
-      const box=document.createElement("li");box.className="usebox";box.hidden=true;
+      const box=document.createElement("li");box.className="usebox";box.hidden=true;const ct=document.createElement("div");ct.className="ctext";ct.style.flexBasis="100%";ct.hidden=true;box.append(ct);
       Object.entries(us).forEach(([did,v])=>{const d=S.decks.find(x=>x.id===did);const b=document.createElement("button");b.className="btn ghost";b.textContent=`${d.name}（${v}枚）`;b.onclick=()=>{goTab("decks");openDeck(did)};box.append(b)});
-      const tg=()=>{box.hidden=!box.hidden;l.setAttribute("aria-expanded",!box.hidden)};
+      const tg=()=>{box.hidden=!box.hidden;l.setAttribute("aria-expanded",!box.hidden);if(!box.hidden)showText(ct,card(i))};
       l.onclick=tg;l.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();tg()}};
       ul.append(l,box);
     });
@@ -856,8 +857,18 @@ $("imgForm").onsubmit=e=>{e.preventDefault();const n=$("imgName").value.trim();i
 function rarTap(l,fn){const nm=l.querySelector(".name");nm.setAttribute("role","button");nm.tabIndex=0;nm.title="タップでレア度ごとの枚数";nm.style.cursor="pointer";
   nm.onclick=fn;nm.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();fn()}};return l}
 // 枚数の画面。vals={レア度:枚数}（""は指定なし）、max は合計の上限、onSave に決めた枚数を渡す
+// カードの効果文（cardtext.json、約7MB・通信は圧縮で約1MB）。初めて見るときに取得し、以後は端末に保存したものを使う
+let TEXT=null,_textP=null;
+const loadText=()=>_textP||(_textP=fetch("cardtext.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>TEXT=j).catch(e=>{_textP=null;throw e}));
+// el に効果を出す。読み込みを待つ間に別のカードの表示へ変わっていたら（ok() が false）書き込まない
+function showText(el,c,ok=()=>true){el.hidden=false;
+  if(c.manual){el.textContent="手入力のカードなので、効果の情報はありません。";return}
+  const put=()=>{if(!ok())return;const t=TEXT[c.name];el.innerHTML=t?`<b>${esc(t[0])}</b>${esc(t[1])}`:"このカードの効果の情報はありません。";el.scrollTop=0};
+  if(TEXT){put();return}
+  el.textContent="効果を読み込んでいます…";
+  loadText().then(put).catch(()=>{if(ok())el.textContent="効果を読み込めませんでした。ネットにつながった状態で一度開くと、以後はオフラインでも見られます。"})}
 let _rar=null;
-function openAlloc(title,sub,vals,max,onSave){_rar={v:{...vals},max,onSave};$("rarTitle").textContent=title;$("rarSub").textContent=sub;renderRar();$("rarModal").hidden=false}
+function openAlloc(title,sub,vals,max,onSave,c){_rar={v:{...vals},max,onSave};$("rarTitle").textContent=title;$("rarSub").textContent=sub;if(c){const t=title;showText($("rarText"),c,()=>!!_rar&&$("rarTitle").textContent===t)}else $("rarText").hidden=true;renderRar();$("rarModal").hidden=false}
 function renderRar(){const ul=$("rarList");ul.innerHTML="";const tot=Object.values(_rar.v).reduce((a,b)=>a+b,0);
   [["","指定なし"],...RARITY].forEach(([k,l])=>{const x=document.createElement("li");
     x.innerHTML=k?`<span class="rb rb-${k}">${k}</span><span class="name" style="color:var(--fg)">${l}</span>`:`<span class="rb" style="background:transparent;color:var(--muted);border:1px dashed var(--line)">―</span><span class="name" style="color:var(--fg)">${l}</span>`;
@@ -866,9 +877,9 @@ function renderRar(){const ul=$("rarList");ul.innerHTML="";const tot=Object.valu
 const valsOf=(obj,id)=>{const v={};for(const k in obj)if(kid(k)===id&&obj[k]>0)v[krar(k)]=obj[k];return v};
 const putVals=(obj,id,v)=>{for(const k in obj)if(kid(k)===id)delete obj[k];for(const r in v)if(v[r]>0)obj[mkKey(id,r)]=v[r]};
 function openOwnRar(id){const c=card(id);if(!c)return;
-  openAlloc(c.name,"レア度ごとの所持枚数です。レア度が違うカードは別枠として数えます。",valsOf(S.owned,id),99,v=>{putVals(S.owned,id,v);gc();save();render()})}
+  openAlloc(c.name,"レア度ごとの所持枚数です。レア度が違うカードは別枠として数えます。",valsOf(S.owned,id),99,v=>{putVals(S.owned,id,v);gc();save();render()},c)}
 function openDeckRar(zk,id){const d=deck(),c=card(id);if(!d||!c)return;const v=valsOf(d[zk],id),cur=Object.values(v).reduce((a,b)=>a+b,0);
-  openAlloc(c.name,`このデッキの${ZONE[zk]}に入れるレア度ごとの枚数です。同じカードはデッキ全体で3枚までです。`,v,3-(deckCnt(d,id)-cur),v2=>{putVals(d[zk],id,v2);gc();save();renderDecks()})}
+  openAlloc(c.name,`このデッキの${ZONE[zk]}に入れるレア度ごとの枚数です。同じカードはデッキ全体で3枚までです。`,v,3-(deckCnt(d,id)-cur),v2=>{putVals(d[zk],id,v2);gc();save();renderDecks()},c)}
 $("rarCancel").onclick=()=>{_rar=null;$("rarModal").hidden=true};
 $("rarModal").onclick=e=>{if(e.target===$("rarModal"))$("rarCancel").onclick()};
 $("rarOk").onclick=()=>{if(!_rar)return;const {v,onSave}=_rar;_rar=null;$("rarModal").hidden=true;onSave(v)};

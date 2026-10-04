@@ -29,6 +29,7 @@
 | --- | --- |
 | `index.html` | アプリ本体（HTML・CSS・JS を1ファイルに収めています） |
 | `cardlist.json` | カード一覧（14,233種） |
+| `cardtext.json` | カードの効果文とステータス。カード名をタップしたときに表示します。初めて見るときに取得し、以後はオフラインでも見られます |
 | `sw.js` | オフライン用のキャッシュと更新処理。`VERSION` がアプリのバージョンです |
 | `manifest.webmanifest` | PWA の設定 |
 | `icon-*.png` / `apple-touch-icon.png` | アイコン |
@@ -43,5 +44,5 @@
 
 ## カードデータについて
 
-- カード名・種別：[mycard/ygopro-database](https://github.com/mycard/ygopro-database)（OCG のみ）
+- カード名・種別・効果文・ステータス：[mycard/ygopro-database](https://github.com/mycard/ygopro-database)（OCG のみ）
 - 読み仮名：[DawnbrandBots/yaml-yugi](https://github.com/DawnbrandBots/yaml-yugi)、遊戯王ニューロン（公式データベース）ほか
