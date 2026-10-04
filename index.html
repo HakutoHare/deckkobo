@@ -487,10 +487,12 @@ function renderDecks(){
   // 不足は「不足カード」タブと同じ全体の計算（集計中のデッキ＋このデッキ、設定の数え方に合わせる）で出し、このデッキで使うカードだけを並べる
   const mine=new Set(Object.keys(deckNeed(d)).map(kid));
   const sl=$("shortList");sl.innerHTML="";let tot=0;
-  shortRows(S.decks.filter(x=>x.id===d.id||inc(x)),mine).filter(r=>r.lack>0&&r.uses[d.id]).sort((a,b)=>cmp(item(a.k),item(b.k))).forEach(({k,need:n,own,lack,uses:us})=>{tot+=lack;
+  shortRows(S.decks.filter(x=>x.id===d.id||inc(x)),mine).filter(r=>r.lack>0&&r.uses[d.id]).sort((a,b)=>cmp(item(a.k),item(b.k))).forEach(({k,need:n,own,lack,uses:us})=>{
+    // このデッキの分だけ数える（このデッキで使う枚数まで）。全体の不足は「不足カード」タブで見る
+    const mineN=Math.min(lack,us[d.id]);tot+=mineN;
     const oth=Object.entries(us).filter(([did])=>did!==d.id).map(([did,v])=>`${S.decks.find(x=>x.id===did).name}${v}枚`);
     const w=document.createElement("span");w.style.textAlign="right";
-    w.innerHTML=`<span class="short">あと${lack}枚</span><span class="uses">所持${own}／${oth.length?"全体で":""}必要${n}</span>`;w.style.flex="none";
+    w.innerHTML=`<span class="short">あと${mineN}枚</span>`+(lack>mineN?`<span class="uses">全体ではあと${lack}枚</span>`:"")+`<span class="uses">所持${own}／${oth.length?"全体で":""}必要${n}</span>`;w.style.flex="none";
     // 「ほかに使用」は長くなりやすいので、カード名を押しつぶさないよう行の下に全幅で出す
     const l=li(item(k),w);if(oth.length){l.style.flexWrap="wrap";const o=document.createElement("span");o.className="uses";o.style.cssText="flex-basis:100%;text-align:right";o.textContent=`ほかに使用：${oth.join("、")}`;l.append(o)}
     sl.append(l);
@@ -975,6 +977,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.2.6","2026年10月4日",["デッキ画面の「不足」を、そのデッキの分だけ数えるようにしました（全体の不足は「不足カード」タブで確認できます）"]],
  ["2.2.5","2026年10月4日",["設定画面に「更新履歴」を追加しました"]],
  ["2.2.4","2026年10月4日",["不足カード一覧の開き方を、ほかの一覧とそろえました（カード名の前の ▶ をタップで開く・1枚ずつ）"]],
  ["2.2.3","2026年10月4日",["レア度の印をカード名の後ろに移しました","レア度の画面で、禁止・制限の枚数を上限にしました","上限に達したときにレア度を足すと、「指定なし」から1枚移すようにしました"]],
