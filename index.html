@@ -1026,6 +1026,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.8.2","2026年10月6日",["対戦のメニューを横長にまとめ、全体が一度に見えるようにしました。右上に「閉じる」も付けました"]],
  ["2.8.1","2026年10月6日",["iPhone で、対戦画面のボタンがダイナミックアイランドに隠れないようにしました"]],
  ["2.8.0","2026年10月6日",["対戦を、スマホを横に倒して使う形にしました（2人の数字を同じ向きで左右に表示）","フェイズのボタンをなくし、「ターン終了」で手番とターン数を進めるようにしました"]],
  ["2.7.3","2026年10月6日",["対戦のライフの履歴を、ウィンドウではなく各自の側に出したまま使えるようにしました（「履歴」ボタンで表示・非表示）"]],
@@ -1159,7 +1160,7 @@ nav button{white-space:nowrap;padding:6px 1px!important;font-size:clamp(11px,3.4
 #duel .hist{margin:0;padding:0;list-style:none;font-size:13px;font-family:var(--f-num)}
 #duel .hist li{padding:4px 0;border-top:1px solid var(--line)}
 #duel .hist .d{color:var(--muted);font-size:11px;display:block}
-#duel .ops [aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}#duel .hl{list-style:none;margin:0;padding:2px 8px;width:100%;max-width:420px;max-height:5.6em;overflow:auto;overscroll-behavior:contain;background:var(--panel);border:1px solid var(--line);border-radius:10px;font-family:var(--f-num);font-size:13px;line-height:1.35;flex:none}#duel .hl li{display:flex;gap:8px;padding:2px 0;border-top:1px solid var(--line);white-space:nowrap}#duel .hl li:first-child{border-top:0}#duel .hl .m{color:var(--warn)}#duel .hl .pl{color:var(--ok)}#duel .hl .f{color:var(--muted);overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1;text-align:right}#duel .hl .e{color:var(--muted)}#duel .win{font-size:24px;font-weight:700;text-align:center}
+#duel .ops [aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}#duel .hl{list-style:none;margin:0;padding:2px 8px;width:100%;max-width:420px;max-height:5.6em;overflow:auto;overscroll-behavior:contain;background:var(--panel);border:1px solid var(--line);border-radius:10px;font-family:var(--f-num);font-size:13px;line-height:1.35;flex:none}#duel .hl li{display:flex;gap:8px;padding:2px 0;border-top:1px solid var(--line);white-space:nowrap}#duel .hl li:first-child{border-top:0}#duel .hl .m{color:var(--warn)}#duel .hl .pl{color:var(--ok)}#duel .hl .f{color:var(--muted);overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1;text-align:right}#duel .hl .e{color:var(--muted)}#duel .dbox.setup{max-width:560px;padding:12px 14px;gap:8px}#duel .shead{display:flex;align-items:center;justify-content:space-between;gap:8px}#duel .shead button{height:34px;padding:0 12px;font-size:14px}#duel .sin{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}#duel .sin input{width:100%;min-width:0;height:36px}#duel .sbt{display:grid;grid-template-columns:1fr 1fr;gap:8px}#duel .sbt button{height:40px;font-size:14px}#duel .win{font-size:24px;font-weight:700;text-align:center}
 /* コインとサイコロ */
 #duel .toss{display:flex;flex-direction:column;align-items:center;gap:14px}
 #duel .coin{width:170px;height:170px;position:relative;transform-style:preserve-3d}
@@ -1243,13 +1244,14 @@ function finish(w){const b=over(`<div class="win">${esc(D.names[w])}の勝ち</d
   b.querySelector('[data-a="again"]').onclick=()=>{close();Object.assign(D,fresh(D.names,D.init));draw()};
   b.querySelector('[data-a="undo"]').onclick=()=>{close();undo()}}
 function undo(){const s=D.undo.pop();if(!s)return;const u=D.undo;D=Object.assign(JSON.parse(s),{undo:u});draw()}
-function setup(first){const b=over(`<h3>${first?"対戦をはじめる":"メニュー"}</h3>
-  <label>左側の人の名前<input id="dN0" value="${esc(D.names[0])}" maxlength="10"></label>
-  <label>右側の人の名前<input id="dN1" value="${esc(D.names[1])}" maxlength="10"></label>
-  <label>初期ライフ<input id="dInit" type="number" inputmode="numeric" value="${D.init}"></label>
-  <button class="main" data-a="new">${first?"はじめる":"新しく始める（ライフを戻す）"}</button>
-  ${first?"":'<button data-a="keep">名前だけ変えて続ける</button><button data-a="swap">先攻を入れかえる（手番を相手に）</button>'}
-  <button data-a="exit">対戦を閉じる</button>`);
+function setup(first){const b=over(`<div class="shead"><h3>${first?"対戦をはじめる":"メニュー"}</h3>${first?"":'<button data-a="x" aria-label="閉じる">✕ 閉じる</button>'}</div>
+  <div class="sin"><label>左側の名前<input id="dN0" value="${esc(D.names[0])}" maxlength="10"></label>
+  <label>右側の名前<input id="dN1" value="${esc(D.names[1])}" maxlength="10"></label>
+  <label>初期ライフ<input id="dInit" type="number" inputmode="numeric" value="${D.init}"></label></div>
+  <div class="sbt"><button class="main" data-a="new">${first?"はじめる":"新しく始める"}</button>
+  ${first?"":'<button data-a="keep">名前だけ変えて続ける</button><button data-a="swap">手番を入れかえる</button>'}
+  <button data-a="exit">対戦を閉じる</button></div>`);b.classList.add("setup");
+  const xb=b.querySelector('[data-a="x"]');if(xb)xb.onclick=close;
   const names=()=>[el("dN0").value.trim()||"自分",el("dN1").value.trim()||"相手"];
   b.querySelector('[data-a="new"]').onclick=()=>{const init=Math.max(1,Math.min(999999,+el("dInit").value||8000));D=fresh(names(),init);close();draw()};
   const k=b.querySelector('[data-a="keep"]');if(k)k.onclick=()=>{D.names=names();close();draw()};
