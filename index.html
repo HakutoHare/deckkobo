@@ -1026,6 +1026,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.8.1","2026年10月6日",["iPhone で、対戦画面のボタンがダイナミックアイランドに隠れないようにしました"]],
  ["2.8.0","2026年10月6日",["対戦を、スマホを横に倒して使う形にしました（2人の数字を同じ向きで左右に表示）","フェイズのボタンをなくし、「ターン終了」で手番とターン数を進めるようにしました"]],
  ["2.7.3","2026年10月6日",["対戦のライフの履歴を、ウィンドウではなく各自の側に出したまま使えるようにしました（「履歴」ボタンで表示・非表示）"]],
  ["2.7.2","2026年10月6日",["メニューの「対戦」と「設定」の並びを入れかえました"]],
@@ -1116,7 +1117,9 @@ nav button{white-space:nowrap;padding:6px 1px!important;font-size:clamp(11px,3.4
 #duel .side{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:8px 12px;min-height:0;transition:background .2s}
 #duel{flex-direction:row!important}
 /* 縦持ちのときは画面ごと90度回し、スマホを横に倒して使う形にする */
-@media (orientation:portrait){#duel{inset:auto!important;top:0!important;left:100vw!important;width:100vh;height:100vw;transform-origin:top left;transform:rotate(90deg)}}
+/* iPhone のダイナミックアイランドやホームバーの分を空ける（横持ちは左右、回して表示するときは本体の上下が左右になる） */
+@media (orientation:landscape){#duel{padding:0 max(env(safe-area-inset-right,0px),0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)!important}}
+@media (orientation:portrait){#duel{inset:auto!important;top:0!important;left:100vw!important;width:100vh;height:100vw;transform-origin:top left;transform:rotate(90deg);padding:0 env(safe-area-inset-bottom,0px) 0 env(safe-area-inset-top,0px)!important}}
 #duel .side{container-type:size}
 #duel .mid{flex-direction:column!important;justify-content:center;width:104px;border:0!important;border-left:1px solid var(--line)!important;border-right:1px solid var(--line)!important}
 #duel .mid .row{flex-direction:column;align-items:stretch}
