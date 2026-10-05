@@ -1026,6 +1026,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.7.2","2026年10月6日",["メニューの「対戦」と「設定」の並びを入れかえました"]],
  ["2.7.1","2026年10月6日",["対戦のライフ計算を、ふつうの電卓と同じ四則演算（＋−×÷）にしました。「00」ボタンもあります"]],
  ["2.7.0","2026年10月6日",["「対戦」を追加しました（1台で2人のライフ・ターン・フェイズを管理、コイン・サイコロ付き）"]],
  ["2.6.0","2026年10月6日",["絞り込みに「効果文に含む言葉」を追加しました（空白で区切ると、すべての言葉を含むカードに絞ります）"]],
@@ -1257,7 +1258,7 @@ let lock=null;const wake=async()=>{try{if(!R.hidden&&navigator.wakeLock)lock=awa
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")wake()});
 function show(){R.hidden=false;draw();wake();if(!D.started)setup(true)}
 function hide(){R.hidden=true;try{lock&&lock.release()}catch(e){}lock=null}
-const nb=document.createElement("button");nb.type="button";nb.textContent="対戦";nb.id="duelBtn";nb.onclick=show;document.querySelector("nav").append(nb);
+const nb=document.createElement("button");nb.type="button";nb.textContent="対戦";nb.id="duelBtn";nb.onclick=show;const nv=document.querySelector("nav");nv.insertBefore(nb,nv.querySelector('[data-tab="opt"]'));
 window.openDuel=show;
 })();
 </script>
