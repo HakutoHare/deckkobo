@@ -1026,6 +1026,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.8.0","2026年10月6日",["対戦を、スマホを横に倒して使う形にしました（2人の数字を同じ向きで左右に表示）","フェイズのボタンをなくし、「ターン終了」で手番とターン数を進めるようにしました"]],
  ["2.7.3","2026年10月6日",["対戦のライフの履歴を、ウィンドウではなく各自の側に出したまま使えるようにしました（「履歴」ボタンで表示・非表示）"]],
  ["2.7.2","2026年10月6日",["メニューの「対戦」と「設定」の並びを入れかえました"]],
  ["2.7.1","2026年10月6日",["対戦のライフ計算を、ふつうの電卓と同じ四則演算（＋−×÷）にしました。「00」ボタンもあります"]],
@@ -1113,11 +1114,18 @@ $("updBtn").onclick=async()=>{
 nav button{white-space:nowrap;padding:6px 1px!important;font-size:clamp(11px,3.4vw,14px)!important;min-width:0}
 #duel{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);user-select:none;-webkit-user-select:none;touch-action:manipulation}
 #duel .side{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:8px 12px;min-height:0;transition:background .2s}
-#duel .side.top{transform:rotate(180deg)}
+#duel{flex-direction:row!important}
+/* 縦持ちのときは画面ごと90度回し、スマホを横に倒して使う形にする */
+@media (orientation:portrait){#duel{inset:auto!important;top:0!important;left:100vw!important;width:100vh;height:100vw;transform-origin:top left;transform:rotate(90deg)}}
+#duel .side{container-type:size}
+#duel .mid{flex-direction:column!important;justify-content:center;width:104px;border:0!important;border-left:1px solid var(--line)!important;border-right:1px solid var(--line)!important}
+#duel .mid .row{flex-direction:column;align-items:stretch}
+#duel .mid .tool{flex:none;font-size:12px!important;gap:2px}#duel .dbox{max-height:100%!important}#duel .dbox>*{flex:none}
+#duel .turn{text-align:center;font-size:14px!important}
 #duel .side.cur{background:color-mix(in srgb,var(--accent) 10%,transparent)}
 #duel .who{font-size:15px;font-weight:700;color:var(--muted)}
 #duel .side.cur .who::after{content:"（手番）";font-size:12px;color:var(--accent)}
-#duel .lp{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:clamp(56px,19vw,96px);font-weight:700;line-height:1}
+#duel .lp{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:clamp(40px,24cqmin,110px);font-weight:700;line-height:1}
 #duel .lp.zero{color:var(--warn)}
 #duel .ops{display:flex;gap:8px;width:100%;max-width:420px}
 #duel .ops button,#duel .mid button,#duel .pad button,#duel .dbox button{font:inherit;font-weight:700;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
@@ -1163,17 +1171,16 @@ nav button{white-space:nowrap;padding:6px 1px!important;font-size:clamp(11px,3.4
 #duel .hint{font-size:12px;color:#ddd}
 </style>
 <div id="duel" hidden>
-  <div class="side top" data-p="1"></div>
+  <div class="side" data-p="0"></div>
   <div class="mid">
-    <div class="row"><span class="turn" id="dTurn"></span><button class="phase" id="dPhase" type="button"></button></div>
-    <div class="row">
+    <div class="row"><span class="turn" id="dTurn"></span><button class="tool" id="dPhase" type="button">ターン終了</button>
       <button class="tool" id="dCoin" type="button" aria-label="コイントス"></button>
       <button class="tool" id="dDice" type="button" aria-label="サイコロ"></button>
       <button class="tool" id="dUndo" type="button">元に戻す</button>
       <button class="tool" id="dMenu" type="button">メニュー</button>
     </div>
   </div>
-  <div class="side bottom" data-p="0"></div>
+  <div class="side" data-p="1"></div>
   <div class="over" id="dOver" hidden></div>
 </div>
 <script>
@@ -1196,7 +1203,7 @@ function side(p){const s=R.querySelector(`.side[data-p="${p}"]`);s.classList.tog
   s.innerHTML=`<div class="who">${esc(D.names[p])}</div><div class="lp${D.lp[p]<=0?" zero":""}">${D.lp[p]}</div>
   <div class="ops"><button class="minus" data-a="-">−</button><button class="plus" data-a="+">＋</button><button class="sm" data-a="h">½</button><button class="sm" data-a="l" aria-pressed="${!!(D.showH&&D.showH[p])}">履歴</button></div>${D.showH&&D.showH[p]?hlist(p):""}`;
   s.querySelectorAll(".ops button").forEach(b=>b.onclick=()=>{const a=b.dataset.a;if(a==="h")change(p,-Math.floor(D.lp[p]/2),"半分");else if(a==="l"){D.showH=D.showH||[false,false];D.showH[p]=!D.showH[p];draw()}else pad(p,a)})}
-function draw(){side(0);side(1);el("dTurn").textContent=`${D.turn}ターン目`;el("dPhase").textContent=`${PH[D.phase]} ▶`;el("dUndo").disabled=!D.undo.length;save()}
+function draw(){side(0);side(1);el("dTurn").textContent=`${D.turn}ターン目`;el("dUndo").disabled=!D.undo.length;save()}
 function change(p,v,label){if(!v)return;snap();const b=D.lp[p];D.lp[p]=Math.max(0,b+v);
   D.hist.push({t:D.turn,p,b,a:D.lp[p],l:label||""});draw();
   if(D.lp[p]===0)setTimeout(()=>finish(1-p),250)}
@@ -1227,15 +1234,15 @@ const close=()=>{el("dOver").hidden=true;el("dOver").innerHTML=""};
 function hlist(p){const h=D.hist.filter(x=>x.p===p).reverse();
   return `<ul class="hl">${h.length?h.map(x=>`<li><span>${x.t}T</span><span>${x.b}→${x.a}</span><span class="${x.a<x.b?"m":"pl"}">${x.a-x.b>0?"＋":"−"}${Math.abs(x.a-x.b)}</span><span class="f">${esc(x.l)}</span></li>`).join(""):'<li class="e">まだ記録がありません</li>'}</ul>`}
 function hist(p){const h=D.hist.slice().reverse();
-  const b=over(`<h3>ライフの履歴</h3><ul class="hist">${h.length?h.map(x=>`<li><span class="d">${x.t}ターン目${x.l?"・"+esc(x.l):""}</span>${esc(D.names[x.p])}　${x.b} → ${x.a}（${x.a-x.b>0?"＋":"−"}${Math.abs(x.a-x.b)}）</li>`).join(""):"<li>まだ記録がありません</li>"}</ul><button type="button">閉じる</button>`,p===1);
+  const b=over(`<h3>ライフの履歴</h3><ul class="hist">${h.length?h.map(x=>`<li><span class="d">${x.t}ターン目${x.l?"・"+esc(x.l):""}</span>${esc(D.names[x.p])}　${x.b} → ${x.a}（${x.a-x.b>0?"＋":"−"}${Math.abs(x.a-x.b)}）</li>`).join(""):"<li>まだ記録がありません</li>"}</ul><button type="button">閉じる</button>`);
   b.querySelector("button").onclick=close}
 function finish(w){const b=over(`<div class="win">${esc(D.names[w])}の勝ち</div><button class="main" data-a="again">もう1戦</button><button data-a="undo">元に戻す（続ける）</button>`);
   b.querySelector('[data-a="again"]').onclick=()=>{close();Object.assign(D,fresh(D.names,D.init));draw()};
   b.querySelector('[data-a="undo"]').onclick=()=>{close();undo()}}
 function undo(){const s=D.undo.pop();if(!s)return;const u=D.undo;D=Object.assign(JSON.parse(s),{undo:u});draw()}
 function setup(first){const b=over(`<h3>${first?"対戦をはじめる":"メニュー"}</h3>
-  <label>下側の人の名前<input id="dN0" value="${esc(D.names[0])}" maxlength="10"></label>
-  <label>上側の人の名前<input id="dN1" value="${esc(D.names[1])}" maxlength="10"></label>
+  <label>左側の人の名前<input id="dN0" value="${esc(D.names[0])}" maxlength="10"></label>
+  <label>右側の人の名前<input id="dN1" value="${esc(D.names[1])}" maxlength="10"></label>
   <label>初期ライフ<input id="dInit" type="number" inputmode="numeric" value="${D.init}"></label>
   <button class="main" data-a="new">${first?"はじめる":"新しく始める（ライフを戻す）"}</button>
   ${first?"":'<button data-a="keep">名前だけ変えて続ける</button><button data-a="swap">先攻を入れかえる（手番を相手に）</button>'}
@@ -1254,7 +1261,7 @@ function dice(){const n=1+Math.floor(Math.random()*6);
   const b=over(`<div class="toss"><div class="die roll"></div><div class="tres"></div><div class="hint">画面を押すと閉じます</div></div>`);b.style.background="transparent";
   const d=b.querySelector(".die");let i=0;const t=setInterval(()=>{d.innerHTML=dieSvg(1+Math.floor(Math.random()*6));if(++i>=8){clearInterval(t);d.innerHTML=dieSvg(n);b.querySelector(".tres").textContent=n}},100);
   d.innerHTML=dieSvg(1+Math.floor(Math.random()*6));el("dOver").onclick=()=>{el("dOver").onclick=null;clearInterval(t);close()}}
-el("dPhase").onclick=()=>{snap();if(D.phase<PH.length-1)D.phase++;else{D.phase=0;D.cur=1-D.cur;D.turn++}draw()};
+el("dPhase").onclick=()=>{snap();D.cur=1-D.cur;D.turn++;draw()};
 el("dUndo").onclick=undo;el("dMenu").onclick=()=>setup(false);el("dCoin").onclick=coin;el("dDice").onclick=dice;
 // 画面を消さない
 let lock=null;const wake=async()=>{try{if(!R.hidden&&navigator.wakeLock)lock=await navigator.wakeLock.request("screen")}catch(e){}};
