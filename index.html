@@ -492,7 +492,7 @@ function pickList(ul,q,label,onPick,cat,fk){
   if(fa&&(!ATTRD||FLT[fk].text&&!TEXT)){ul.innerHTML='<li class="empty">絞り込みのデータを読み込んでいます…</li>';Promise.all([loadAttr(),FLT[fk].text?loadText():0]).then(render).catch(()=>{ul.innerHTML='<li class="empty">絞り込みのデータを読み込めませんでした。ネットにつながった状態で一度開くと、以後はオフラインでも使えます。</li>'});return}
   const hits=search(q,cat,fk);
   if(!hits.length){ul.innerHTML='<li class="empty">見つかりません。</li>';return}
-  hits.forEach(c=>{const b=document.createElement("button");b.className="btn ghost";b.textContent=label(c);b.onclick=()=>onPick(c);ul.append(li(c,b))});
+  hits.forEach(c=>{const b=document.createElement("button");b.className="btn ghost";b.textContent=label(c);b.onclick=()=>onPick(c);ul.append(...detailRow(ul,li(c,b),"pick:"+ul.id,c.name,c,[]))}); // 名前を押すと効果を出す
 }
 // 使われていない手入力以外のカードは掃除
 function gc(){const used=new Set(Object.keys(S.owned).map(kid));S.decks.forEach(d=>["main","extra","side"].forEach(z=>Object.keys(d[z]).forEach(i=>used.add(kid(i)))));S.cards=S.cards.filter(c=>used.has(c.id)||c.manual)}
@@ -1026,6 +1026,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.8.3","2026年10月6日",["検索の候補でも、カード名を押すと効果が出るようにしました"]],
  ["2.8.2","2026年10月6日",["対戦のメニューを横長にまとめ、全体が一度に見えるようにしました。右上に「閉じる」も付けました"]],
  ["2.8.1","2026年10月6日",["iPhone で、対戦画面のボタンがダイナミックアイランドに隠れないようにしました"]],
  ["2.8.0","2026年10月6日",["対戦を、スマホを横に倒して使う形にしました（2人の数字を同じ向きで左右に表示）","フェイズのボタンをなくし、「ターン終了」で手番とターン数を進めるようにしました"]],
