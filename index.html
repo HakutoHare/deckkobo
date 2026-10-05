@@ -1026,6 +1026,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.7.3","2026年10月6日",["対戦のライフの履歴を、ウィンドウではなく各自の側に出したまま使えるようにしました（「履歴」ボタンで表示・非表示）"]],
  ["2.7.2","2026年10月6日",["メニューの「対戦」と「設定」の並びを入れかえました"]],
  ["2.7.1","2026年10月6日",["対戦のライフ計算を、ふつうの電卓と同じ四則演算（＋−×÷）にしました。「00」ボタンもあります"]],
  ["2.7.0","2026年10月6日",["「対戦」を追加しました（1台で2人のライフ・ターン・フェイズを管理、コイン・サイコロ付き）"]],
@@ -1147,7 +1148,7 @@ nav button{white-space:nowrap;padding:6px 1px!important;font-size:clamp(11px,3.4
 #duel .hist{margin:0;padding:0;list-style:none;font-size:13px;font-family:var(--f-num)}
 #duel .hist li{padding:4px 0;border-top:1px solid var(--line)}
 #duel .hist .d{color:var(--muted);font-size:11px;display:block}
-#duel .win{font-size:24px;font-weight:700;text-align:center}
+#duel .ops [aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}#duel .hl{list-style:none;margin:0;padding:2px 8px;width:100%;max-width:420px;max-height:5.6em;overflow:auto;overscroll-behavior:contain;background:var(--panel);border:1px solid var(--line);border-radius:10px;font-family:var(--f-num);font-size:13px;line-height:1.35;flex:none}#duel .hl li{display:flex;gap:8px;padding:2px 0;border-top:1px solid var(--line);white-space:nowrap}#duel .hl li:first-child{border-top:0}#duel .hl .m{color:var(--warn)}#duel .hl .pl{color:var(--ok)}#duel .hl .f{color:var(--muted);overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1;text-align:right}#duel .hl .e{color:var(--muted)}#duel .win{font-size:24px;font-weight:700;text-align:center}
 /* コインとサイコロ */
 #duel .toss{display:flex;flex-direction:column;align-items:center;gap:14px}
 #duel .coin{width:170px;height:170px;position:relative;transform-style:preserve-3d}
@@ -1193,8 +1194,8 @@ el("dCoin").innerHTML=coinFace(true)+"コイン";el("dDice").innerHTML=dieSvg(5)
 // 画面
 function side(p){const s=R.querySelector(`.side[data-p="${p}"]`);s.classList.toggle("cur",D.cur===p);
   s.innerHTML=`<div class="who">${esc(D.names[p])}</div><div class="lp${D.lp[p]<=0?" zero":""}">${D.lp[p]}</div>
-  <div class="ops"><button class="minus" data-a="-">−</button><button class="plus" data-a="+">＋</button><button class="sm" data-a="h">½</button><button class="sm" data-a="l">履歴</button></div>`;
-  s.querySelectorAll(".ops button").forEach(b=>b.onclick=()=>{const a=b.dataset.a;if(a==="h")change(p,-Math.floor(D.lp[p]/2),"半分");else if(a==="l")hist(p);else pad(p,a)})}
+  <div class="ops"><button class="minus" data-a="-">−</button><button class="plus" data-a="+">＋</button><button class="sm" data-a="h">½</button><button class="sm" data-a="l" aria-pressed="${!!(D.showH&&D.showH[p])}">履歴</button></div>${D.showH&&D.showH[p]?hlist(p):""}`;
+  s.querySelectorAll(".ops button").forEach(b=>b.onclick=()=>{const a=b.dataset.a;if(a==="h")change(p,-Math.floor(D.lp[p]/2),"半分");else if(a==="l"){D.showH=D.showH||[false,false];D.showH[p]=!D.showH[p];draw()}else pad(p,a)})}
 function draw(){side(0);side(1);el("dTurn").textContent=`${D.turn}ターン目`;el("dPhase").textContent=`${PH[D.phase]} ▶`;el("dUndo").disabled=!D.undo.length;save()}
 function change(p,v,label){if(!v)return;snap();const b=D.lp[p];D.lp[p]=Math.max(0,b+v);
   D.hist.push({t:D.turn,p,b,a:D.lp[p],l:label||""});draw();
@@ -1223,6 +1224,8 @@ function pad(p,sign){const s=R.querySelector(`.side[data-p="${p}"]`),L=D.lp[p];
     up()});up()}
 function over(html,rot){const o=el("dOver");o.innerHTML=`<div class="dbox" style="${rot?"transform:rotate(180deg)":""}">${html}</div>`;o.hidden=false;return o.firstChild}
 const close=()=>{el("dOver").hidden=true;el("dOver").innerHTML=""};
+function hlist(p){const h=D.hist.filter(x=>x.p===p).reverse();
+  return `<ul class="hl">${h.length?h.map(x=>`<li><span>${x.t}T</span><span>${x.b}→${x.a}</span><span class="${x.a<x.b?"m":"pl"}">${x.a-x.b>0?"＋":"−"}${Math.abs(x.a-x.b)}</span><span class="f">${esc(x.l)}</span></li>`).join(""):'<li class="e">まだ記録がありません</li>'}</ul>`}
 function hist(p){const h=D.hist.slice().reverse();
   const b=over(`<h3>ライフの履歴</h3><ul class="hist">${h.length?h.map(x=>`<li><span class="d">${x.t}ターン目${x.l?"・"+esc(x.l):""}</span>${esc(D.names[x.p])}　${x.b} → ${x.a}（${x.a-x.b>0?"＋":"−"}${Math.abs(x.a-x.b)}）</li>`).join(""):"<li>まだ記録がありません</li>"}</ul><button type="button">閉じる</button>`,p===1);
   b.querySelector("button").onclick=close}
