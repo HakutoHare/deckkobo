@@ -489,7 +489,7 @@ function ensure(c){let x=S.cards.find(y=>y.name===c.name);if(!x){x={id:uid(),nam
 function pickList(ul,q,label,onPick,cat,fk){
   ul.innerHTML="";const fa=fltOn(fk);
   if(!norm(q)&&!cat&&!fa){ul.innerHTML='<li class="empty">カード名を入力するか、種類を選ぶと候補が出ます。</li>';return}
-  if(fa&&!ATTRD){ul.innerHTML='<li class="empty">絞り込みのデータを読み込んでいます…</li>';loadAttr().then(render).catch(()=>{ul.innerHTML='<li class="empty">絞り込みのデータを読み込めませんでした。ネットにつながった状態で一度開くと、以後はオフラインでも使えます。</li>'});return}
+  if(fa&&(!ATTRD||FLT[fk].text&&!TEXT)){ul.innerHTML='<li class="empty">絞り込みのデータを読み込んでいます…</li>';Promise.all([loadAttr(),FLT[fk].text?loadText():0]).then(render).catch(()=>{ul.innerHTML='<li class="empty">絞り込みのデータを読み込めませんでした。ネットにつながった状態で一度開くと、以後はオフラインでも使えます。</li>'});return}
   const hits=search(q,cat,fk);
   if(!hits.length){ul.innerHTML='<li class="empty">見つかりません。</li>';return}
   hits.forEach(c=>{const b=document.createElement("button");b.className="btn ghost";b.textContent=label(c);b.onclick=()=>onPick(c);ul.append(li(c,b))});
@@ -953,7 +953,7 @@ function detailRow(ul,l,listId,k,c,buttons,opt={}){const nm=l.querySelector(".na
   nm.onclick=tg;nm.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();tg()}};
   return [l,box]}
 // カードの効果文（cardtext.json、約7MB・通信は圧縮で約1MB）。初めて見るときに取得し、以後は端末に保存したものを使う
-const loadText=()=>_textP||(_textP=fetch("cardtext.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>TEXT=j).catch(e=>{_textP=null;throw e}));
+function loadText(){return _textP||(_textP=fetch("cardtext.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>TEXT=j).catch(e=>{_textP=null;throw e}))}
 // el に効果を出す。読み込みを待つ間に別のカードの表示へ変わっていたら（ok() が false）書き込まない
 function showText(el,c,ok=()=>true){el.hidden=false;
   if(c.manual){el.textContent="手入力のカードなので、効果の情報はありません。";return}
@@ -1026,6 +1026,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.6.0","2026年10月6日",["絞り込みに「効果文に含む言葉」を追加しました（空白で区切ると、すべての言葉を含むカードに絞ります）"]],
  ["2.5.1","2026年10月5日",["絞り込みのテーマに「ライブツイン・イビルツイン」（両方まとめて）を追加しました"]],
  ["2.5.0","2026年10月5日",["カードの検索に「絞り込み」を追加しました（属性・種族・レベル・種類・テーマ）"]],
  ["2.4.1","2026年10月4日",["「相場を調べる」でレア度も含めて検索するようにしました（レア度の指定がない枠は、ノーマルかレアで検索します）"]],
@@ -1053,11 +1054,13 @@ $("logModal").onclick=e=>{if(e.target===$("logModal"))$("logModal").hidden=true}
 // 絞り込み（属性・種族・レベル・種類・テーマ・ジャンル）。データは cardattr.json（初めて絞り込むときに取得）と genre.json
 function loadAttr(){return _attrP||(_attrP=fetch("cardattr.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>{ATTRD=j}).catch(e=>{_attrP=null;throw e}))}
 function fltOn(k){const f=k&&FLT[k];return !!f&&Object.values(f).some(v=>v!=="")}
+let TEXTN=null;// 効果文の検索用（表記ゆれをならしたもの）
 function fltPred(k){if(!fltOn(k)||!ATTRD)return null;const f=FLT[k],th=norm(f.theme||"");
-  return n=>{const a=ATTRD.cards[n];if(f.genre&&!(GENRE[f.genre]||[]).includes(n))return false;if(!a)return !f.attr&&!f.race&&!f.lv&&!f.kind&&!th;
+  const ws=(f.text||"").split(/[\s　]+/).filter(Boolean).map(norm);if(ws.length&&!TEXT)return null;if(ws.length&&!TEXTN){TEXTN={};for(const n in TEXT)TEXTN[n]=norm(TEXT[n].join(" "))}
+  return n=>{const a=ATTRD.cards[n];if(f.genre&&!(GENRE[f.genre]||[]).includes(n))return false;if(ws.length){const t=TEXTN[n];if(!t||!ws.every(w=>t.includes(w)))return false}if(!a)return !f.attr&&!f.race&&!f.lv&&!f.kind&&!th;
     if(f.attr&&a[0]!=+f.attr)return false;if(f.race&&a[1]!=+f.race)return false;if(f.lv&&a[2]!=+f.lv)return false;
     if(f.kind&&!KINDS[+f.kind][1](a[3]))return false;if(th&&!a[4].some(i=>norm(ATTRD.themes[i]).includes(th)))return false;return true}}
-function fltBar(el){const k=el.dataset.k;const f=FLT[k]=FLT[k]||{attr:"",race:"",lv:"",kind:"",theme:"",genre:""};const n=Object.values(f).filter(v=>v!=="").length;
+function fltBar(el){const k=el.dataset.k;const f=FLT[k]=FLT[k]||{attr:"",race:"",lv:"",kind:"",theme:"",genre:"",text:""};const n=Object.values(f).filter(v=>v!=="").length;
   if(el._open===undefined)el._open=false;el.innerHTML="";
   const b=document.createElement("button");b.type="button";b.className="toggle";b.setAttribute("aria-pressed",n>0);b.setAttribute("aria-expanded",el._open);b.textContent=(el._open?"▼ ":"▶ ")+"絞り込み"+(n?`（${n}）`:"");
   b.onclick=()=>{el._open=!el._open;if(el._open&&!ATTRD)loadAttr().then(()=>fltBar(el)).catch(()=>{});fltBar(el)};el.append(b);
@@ -1072,6 +1075,8 @@ function fltBar(el){const k=el.dataset.k;const f=FLT[k]=FLT[k]||{attr:"",race:""
   const gs=Object.keys(GENRE);if(gs.length)sel("genre","ジャンル",gs.map(g=>[g,g]));
   const t=document.createElement("input");t.type="search";t.placeholder="テーマ（例：斬機）";t.value=f.theme;t.setAttribute("list","themeList");
   t.onchange=t.onsearch=()=>{f.theme=t.value.trim();render()};box.append(t);
+  const e=document.createElement("input");e.type="search";e.placeholder="効果文に含む言葉（空白で区切ると両方）";e.value=f.text;e.style.flexBasis="100%";
+  e.onchange=e.onsearch=()=>{f.text=e.value.trim();render()};box.append(e);
   if(ATTRD&&!document.getElementById("themeList")){const dl=document.createElement("datalist");dl.id="themeList";dl.innerHTML=ATTRD.themes.slice().sort((a,b)=>coll.compare(a,b)).map(x=>`<option value="${esc(x)}">`).join("");document.body.append(dl)}
   el.append(box)}
 // バックアップ
