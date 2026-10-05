@@ -1026,6 +1026,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.7.1","2026年10月6日",["対戦のライフ計算を、ふつうの電卓と同じ四則演算（＋−×÷）にしました。「00」ボタンもあります"]],
  ["2.7.0","2026年10月6日",["「対戦」を追加しました（1台で2人のライフ・ターン・フェイズを管理、コイン・サイコロ付き）"]],
  ["2.6.0","2026年10月6日",["絞り込みに「効果文に含む言葉」を追加しました（空白で区切ると、すべての言葉を含むカードに絞ります）"]],
  ["2.5.1","2026年10月5日",["絞り込みのテーマに「ライブツイン・イビルツイン」（両方まとめて）を追加しました"]],
@@ -1129,10 +1130,10 @@ nav button{white-space:nowrap;padding:6px 1px!important;font-size:clamp(11px,3.4
 /* テンキー */
 #duel .pad{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;justify-content:center;gap:6px;padding:8px 12px;z-index:2}
 #duel .pad .calc{text-align:center;font-family:var(--f-num);font-size:18px;font-weight:700}
-#duel .pad .calc b{font-size:26px}
+#duel .pad .calc{display:flex;flex-direction:column;align-items:flex-end;padding:0 4px;max-width:420px;width:100%;margin:0 auto}#duel .pad .calc b{font-size:34px;line-height:1.1}#duel .pad .calc .ex{font-size:13px;color:var(--muted);min-height:1.3em;overflow-wrap:anywhere;text-align:right}
 #duel .pad .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-width:420px;width:100%;margin:0 auto;flex:1;max-height:260px}
 #duel .pad .grid button{font-size:20px;min-height:36px}
-#duel .pad .grid .q{font-size:14px;color:var(--accent)}
+#duel .pad .grid .q{font-size:22px;color:var(--accent)}#duel .pad .grid .sm{font-size:14px}
 #duel .pad .grid .ok{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
 /* 結果・履歴・設定の表示 */
 #duel .over{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px}
@@ -1197,15 +1198,28 @@ function draw(){side(0);side(1);el("dTurn").textContent=`${D.turn}ターン目`;
 function change(p,v,label){if(!v)return;snap();const b=D.lp[p];D.lp[p]=Math.max(0,b+v);
   D.hist.push({t:D.turn,p,b,a:D.lp[p],l:label||""});draw();
   if(D.lp[p]===0)setTimeout(()=>finish(1-p),250)}
-function pad(p,sign){const s=R.querySelector(`.side[data-p="${p}"]`);let v="";
+// 電卓（ふつうの電卓と同じく左から順に計算する）。今のライフから始まり、− や ＋ を押して開くとその記号を入れた状態になる
+function pad(p,sign){const s=R.querySelector(`.side[data-p="${p}"]`),L=D.lp[p];
+  let acc=L,op=sign==="-"?"−":sign==="+"?"＋":null,cur="",toks=[String(L)].concat(op?[op]:[]),done=false;
+  const calc=(x,o,y)=>o==="＋"?x+y:o==="−"?x-y:o==="×"?x*y:o==="÷"?(y?x/y:x):y;
+  const fmt=v=>String(Math.round(v*100)/100);
   const box=document.createElement("div");box.className="pad";s.append(box);
-  const up=()=>{const n=+v||0,a=Math.max(0,D.lp[p]+(sign==="-"?-n:n));
-    box.querySelector(".calc").innerHTML=`${esc(D.names[p])}：${D.lp[p]} → <b>${a}</b><br>${sign==="-"?"ダメージ":"回復"}：${n}`};
-  box.innerHTML=`<div class="calc"></div><div class="grid">${["7","8","9","+1000","4","5","6","+500","1","2","3","+100","0","00","C","決定"].map(k=>`<button data-k="${k}" class="${k[0]==="+"?"q":k==="決定"?"ok":""}">${k}</button>`).join("")}</div><div class="ops"><button class="sm" data-k="x">やめる</button></div>`;
+  const up=()=>{const res=Math.max(0,Math.floor(op&&cur!==""?calc(acc,op,+cur):!op&&cur!==""?+cur:acc));
+    box.querySelector(".calc").innerHTML=`<span class="ex">${esc(toks.concat(cur!==""?[cur]:[]).join(" "))}${done?" =":""}</span><b>${esc(cur!==""?cur:fmt(acc))}</b><span class="ex">${esc(D.names[p])}：${L} → ${res}</span>`};
+  const eq=()=>{if(op&&cur!==""){acc=calc(acc,op,+cur)}else if(cur!==""&&!op){acc=+cur}op=null;cur=""};
+  box.innerHTML=`<div class="calc"></div><div class="grid">${["7","8","9","÷","4","5","6","×","1","2","3","−","0","00","C","＋","やめる","=","決定"].map(k=>`<button data-k="${k}" class="${"÷×−＋=".includes(k)?"q":k==="決定"?"ok":k==="やめる"?"sm":""}"${k==="決定"?' style="grid-column:span 2"':""}>${k}</button>`).join("")}</div>`;
   box.querySelectorAll("button").forEach(b=>b.onclick=()=>{const k=b.dataset.k;
-    if(k==="x")return box.remove();
-    if(k==="決定"){box.remove();return change(p,(sign==="-"?-1:1)*(+v||0))}
-    if(k==="C")v="";else if(k[0]==="+")v=String((+v||0)+ +k.slice(1));else if(v.length<6)v=(v+k).replace(/^0+/,"");up()});up()}
+    if(k==="やめる")return box.remove();
+    if(k==="決定"){if(op&&cur!=="")toks.push(cur);eq();box.remove();const r=Math.max(0,Math.floor(acc));return change(p,r-L,toks.length>1?toks.join(" "):"")}
+    if(k==="C"){acc=L;op=null;cur="";toks=[String(L)];done=false}
+    else if(k==="="){if(op&&cur!==""){toks.push(cur);eq();done=true}}
+    else if("÷×−＋".includes(k)){if(done){toks=[fmt(acc)];done=false}
+      if(cur!==""){toks.push(cur);acc=op?calc(acc,op,+cur):+cur;cur=""}else if(op)toks.pop();
+      op=k;toks.push(k)}
+    else{if(done){acc=0;toks=[];op=null;done=false}
+      if(!op&&cur===""&&toks.length){toks=[];acc=0}
+      if((cur+k).replace(/^0+/,"").length<=7)cur=(cur+k).replace(/^0+(?=\d)/,"")}
+    up()});up()}
 function over(html,rot){const o=el("dOver");o.innerHTML=`<div class="dbox" style="${rot?"transform:rotate(180deg)":""}">${html}</div>`;o.hidden=false;return o.firstChild}
 const close=()=>{el("dOver").hidden=true;el("dOver").innerHTML=""};
 function hist(p){const h=D.hist.slice().reverse();
