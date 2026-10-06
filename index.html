@@ -561,6 +561,8 @@ function syncLay(){S.divs=S.divs||{};const ids=new Set(S.decks.map(d=>d.id));
   S.decks.forEach((d,i)=>{if(seen.has(d.id))return;seen.add(d.id);const prev=i&&i<S.decks.length-1?S.decks[i-1].id:null;
     const g=prev&&Object.values(S.divs).find(v=>v.decks.includes(prev));
     if(g)g.decks.splice(g.decks.indexOf(prev)+1,0,d.id);else if(prev&&lay.includes(prev))lay.splice(lay.indexOf(prev)+1,0,d.id);else lay.push(d.id)});
+  // 名前のないグループには「グループ1」「グループ2」…と空いている番号を付ける
+  lay.forEach(k=>{const v=S.divs[k];if(!v||(v.name||"").trim())return;const used=new Set(Object.values(S.divs).map(w=>(w.name||"").match(/^グループ(\d+)$/)?.[1]).filter(Boolean).map(Number));let n=1;while(used.has(n))n++;v.name="グループ"+n});
   S.lay=lay;const order=flatLay(),pos=Object.fromEntries(order.map((x,i)=>[x,i]));S.decks.sort((a,b)=>pos[a.id]-pos[b.id])}
 function flatLay(){const o=[];(S.lay||[]).forEach(x=>{if(x.startsWith("div:"))o.push(...(S.divs[x]?.decks||[]));else o.push(x)});return o}
 function secOf(d){return Object.values(S.divs||{}).find(v=>(v.decks||[]).includes(d.id))||null}
@@ -1125,6 +1127,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.10.2","2026年10月6日",["新しいグループに「グループ1」「グループ2」…と番号付きの名前を付けるようにしました"]],
  ["2.10.1","2026年10月6日",["グループの行にも「集計」のスイッチを付けました（設定内のチェックはなくしました）","不足カードの「集計するデッキ」をグループごとに分けて表示するようにしました"]],
  ["2.10.0","2026年10月6日",["「仕切り」を「グループ」に変えました。グループは中のデッキごと移動します","デッキはグループの見出しの上で離すとそのグループに入ります","グループの行を押すとたたむ／開く、右端の歯車で設定を開くようにしました","並べ替え中は、持ち上げた行が指について浮かぶようにしました"]],
  ["2.9.1","2026年10月6日",["仕切りの色を選べるようにしました（範囲のデッキにも同じ色の帯が付きます）","仕切りの「▼／▶」で、範囲のデッキをたたんだり開いたりできるようにしました","仕切りの設定から、範囲のデッキをまとめて集計に入れる・外すができるようにしました"]],
