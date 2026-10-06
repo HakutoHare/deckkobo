@@ -137,7 +137,7 @@ ul.list li:first-child{border-top:0}
     <div class="panel">
       <h2>デッキを作成</h2>
       <form class="row" id="newDeckForm">
-        <input type="text" id="newDeckName" placeholder="名前（例：レイズ・ムーン）">
+        <input type="text" id="newDeckName" placeholder="名前を入力">
         <button class="btn">作成</button>
         <button type="button" class="btn ghost" id="newListBtn" title="デッキとは別に、単品で欲しいカードのリストを作ります">リスト</button>
       </form>
@@ -1171,7 +1171,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
- ["2.13.0","2026年10月6日",["単品で欲しいカードの「リスト」を作れるようにしました（デッキ一覧の「リスト」ボタン）","リストは区分なしで1カード99枚まで入れられ、不足カードではデッキの必要数に上乗せして数えます"]],
+ ["2.13.1","2026年10月6日",["単品で欲しいカードの「リスト」を作れるようにしました（デッキ一覧の「リスト」ボタン）","リストは区分なしで1カード99枚まで入れられ、不足カードではデッキの必要数に上乗せして数えます"]],
  ["2.12.1","2026年10月6日",["設定画面がスクロールできず、下のほうの項目（アプリの情報・更新など）が見えなかった不具合を直しました"]],
  ["2.12.0","2026年10月6日",["設定に「表示」を追加しました（端末の設定に合わせるか、ダークモードのオン・オフを自分で選べます）"]],
  ["2.11.1","2026年10月6日",["グループの中のデッキに、グループの色に合わせた背景色を付けました"]],
