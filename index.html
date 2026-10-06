@@ -143,7 +143,7 @@ html{padding-bottom:0!important}
 .iconbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}.iconbtn circle{fill:currentColor;stroke:none}
 .sheet.menu{gap:4px}.mi{all:unset;cursor:pointer;padding:13px 6px;border-bottom:1px solid var(--line);font-weight:700;font-size:15px;color:var(--fg)}.mi.del{color:var(--warn);border-bottom:0}.sheet.menu .btn{margin-top:6px}
 .limbtn{all:unset;cursor:pointer;font-weight:700}.limwarn div{font-size:12px;margin-top:2px}
-#addFltBtn[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+#addFltBtn[aria-pressed="true"],#ownFltBtn[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
 #zoneTabs{flex:none}
 .sumcard{background:var(--accent);color:var(--accent-fg);border-radius:14px;padding:10px 14px;display:flex;flex-direction:column;gap:2px;flex:none}
 .sumcard b{font-size:26px;font-family:var(--f-num);line-height:1.2}.sumcard .sl{font-size:12px;opacity:.9}
@@ -309,20 +309,16 @@ html{padding-bottom:0!important}
   </section>
 
   <section id="tab-owned" hidden>
-    <div class="seg" id="ownTabs" role="tablist">
-      <button role="tab" data-v="add" aria-selected="true">カードを追加</button>
-      <button role="tab" data-v="list" aria-selected="false">所持一覧 <span id="ownedCount"></span></button>
-    </div>
-    <div class="panel grow" id="ownAddView">
-      <input type="search" id="ownSearch" placeholder="カード名か読み仮名の一部（例：しえろ、ぞうしょく）">
-      <div class="hscroll cats" data-k="own"></div>
-      <div class="flt" data-k="own"></div>
+    <div class="pagehead"><h1>所持</h1><span class="count" id="ownedCount"></span></div>
+    <div class="panel grow">
+      <div class="row" style="flex-wrap:nowrap">
+        <input type="search" id="ownSearch" placeholder="カードを探す（名前か読み仮名）" style="flex:1 1 0">
+        <button type="button" class="btn ghost sm" id="ownFltBtn" aria-expanded="false">絞込</button>
+      </div>
+      <div id="ownFltBox" hidden><div class="hscroll cats" data-k="own"></div>
+      <div class="flt" data-k="own"></div></div>
+      <div class="sub" id="ownMode"></div>
       <ul class="list" id="ownSearchList"></ul>
-    </div>
-    <div class="panel grow" id="ownListView" hidden>
-      <input type="search" id="ownedFilter" placeholder="所持カードを絞り込み">
-      <div class="sub">カード名をタップすると、効果とレア度の変更ボタンが出ます。</div>
-      <div class="hscroll cats" data-k="ownList"></div>
       <ul class="list" id="ownedList"></ul>
     </div>
   </section>
@@ -571,13 +567,13 @@ function search(q,cat,fk){
 }
 function catBar(el){const k=el.dataset.k;el.innerHTML="";[["","すべて"],["monster","モンスター"],["spell","魔法"],["trap","罠"],["extra","EX"]].forEach(([v,l])=>{const b=document.createElement("button");b.className="toggle";b.textContent=l;b.setAttribute("aria-pressed",(CAT[k]||"")===v);b.onclick=()=>{CAT[k]=v;render()};el.append(b)})}
 function ensure(c){let x=S.cards.find(y=>y.name===c.name);if(!x){x={id:uid(),name:c.name,type:c.type};S.cards.push(x)}return x.id}
-function pickList(ul,q,label,onPick,cat,fk){
+function pickList(ul,q,label,onPick,cat,fk,mk){
   ul.innerHTML="";const fa=fltOn(fk);
   if(!norm(q)&&!cat&&!fa){ul.innerHTML='<li class="empty">カード名を入力するか、種類を選ぶと候補が出ます。</li>';return}
   if(fa&&(!ATTRD||FLT[fk].text&&!TEXT)){ul.innerHTML='<li class="empty">絞り込みのデータを読み込んでいます…</li>';Promise.all([loadAttr(),FLT[fk].text?loadText():0]).then(render).catch(()=>{ul.innerHTML='<li class="empty">絞り込みのデータを読み込めませんでした。ネットにつながった状態で一度開くと、以後はオフラインでも使えます。</li>'});return}
   const hits=search(q,cat,fk);
   if(!hits.length){ul.innerHTML='<li class="empty">見つかりません。</li>';return}
-  hits.forEach(c=>{const b=document.createElement("button");b.className="btn ghost";b.textContent=label(c);b.onclick=()=>onPick(c);ul.append(...detailRow(ul,li(c,b),"pick:"+ul.id,c.name,c,[]))}); // 名前を押すと効果を出す
+  hits.forEach(c=>{let b;if(mk)b=mk(c);else{b=document.createElement("button");b.className="btn ghost";b.textContent=label(c);b.onclick=()=>onPick(c)}ul.append(...detailRow(ul,li(c,b),"pick:"+ul.id,c.name,c,[]))}); // 名前を押すと効果を出す
 }
 // 使われていない手入力以外のカードは掃除
 function gc(){const used=new Set(Object.keys(S.owned).map(kid));S.decks.forEach(d=>["main","extra","side"].forEach(z=>Object.keys(d[z]).forEach(i=>used.add(kid(i)))));S.cards=S.cards.filter(c=>used.has(c.id)||c.manual)}
@@ -626,13 +622,20 @@ function renderDecks(){
 }
 const ownTot=id=>Object.entries(S.owned).reduce((a,[k,n])=>a+(kid(k)===id?n:0),0);
 function setOwned(id,v){if(v>0)S.owned[id]=v;else{delete S.owned[id];gc()}save();renderOwned()}
+// 所持：検索が空なら持っているカードの一覧、入力（または属性などで絞り込み）すると全カードから探す
 function renderOwned(){
-  pickList($("ownSearchList"),$("ownSearch").value,c=>{const x=S.cards.find(y=>y.name===c.name);return "＋1（所持"+(x?ownTot(x.id):0)+"）"},c=>{const id=ensure(c);setOwned(id,(S.owned[id]||0)+1)},CAT.own,"own");
-  const q=$("ownedFilter").value,ul=$("ownedList");ul.innerHTML="";
-  $("ownedCount").textContent=Object.values(S.owned).reduce((a,b)=>a+b,0)+"枚";
-  const oc=CAT.ownList;const list=Object.keys(S.owned).filter(k=>S.owned[k]>0).map(item).filter(c=>c&&(!oc||c.type===oc)&&match(c,q)).sort(cmp);
-  if(!list.length)ul.innerHTML=Object.keys(S.owned).length?'<li class="empty">該当する所持カードはありません。</li>':'<li class="empty">所持カードはまだありません。「カードを追加」から登録してください。</li>';
-  grouped(ul,list,c=>S.owned[c.id],c=>detailRow(ul,li(c,qty(S.owned[c.id],dv=>setOwned(c.id,S.owned[c.id]+dv))),"own",c.id,c,[["レア度を変更",()=>openOwnRar(kid(c.id))]]));
+  const q=$("ownSearch").value,searching=!!norm(q)||fltOn("own");
+  $("ownedCount").textContent="合計"+Object.values(S.owned).reduce((a,b)=>a+b,0)+"枚";
+  $("ownFltBtn").setAttribute("aria-pressed",!!(CAT.own||fltOn("own")));
+  $("ownSearchList").hidden=!searching;$("ownedList").hidden=searching;
+  $("ownMode").textContent=searching?"全カードから検索しています。＋−で所持の枚数を変えられます。":"持っているカードの一覧です。上の欄に入力すると、全カードから探せます。";
+  if(searching)pickList($("ownSearchList"),q,null,null,CAT.own,"own",c=>{const x=S.cards.find(y=>y.name===c.name),n=x?ownTot(x.id):0;
+    const el=qty(n,dv=>{const id=ensure(c);if(dv>0)S.owned[id]=(S.owned[id]||0)+1;else if(S.owned[id]>0){S.owned[id]--;if(!S.owned[id]){delete S.owned[id];gc()}}else if(n>0){toast("レア度ごとの枚数は、カードを開いて「レア度」から変えてください");return}else return;save();renderOwned()});
+    el.querySelectorAll("button").forEach((x,k)=>x.setAttribute("aria-label",(k?"所持を1枚増やす：":"所持を1枚減らす：")+c.name));return el});
+  const ul=$("ownedList");ul.innerHTML="";if(searching)return;
+  const oc=CAT.own;const list=Object.keys(S.owned).filter(k=>S.owned[k]>0).map(item).filter(c=>c&&(!oc||c.type===oc)).sort(cmp);
+  if(!list.length)ul.innerHTML=Object.keys(S.owned).length?'<li class="empty">この種類の所持カードはありません。</li>':'<li class="empty">所持カードはまだありません。上の欄でカードを探して、＋で登録してください。</li>';
+  grouped(ul,list,c=>S.owned[c.id],c=>detailRow(ul,li(c,qty(S.owned[c.id],dv=>setOwned(c.id,S.owned[c.id]+dv))),"own",c.id,c,[["レア度",()=>openOwnRar(kid(c.id))]]));
 }
 let view="list",curZone="main";
 const ORDER=["monster","spell","trap","extra"];
@@ -824,7 +827,6 @@ darkMQ().addEventListener?.("change",applyTheme);
 $("reuseExSw").onclick=()=>{S.opt={...(S.opt||{}),reuseEx:!reuseEx()};save();render()};
 $("incSw").onclick=()=>{S.opt={...(S.opt||{}),showInc:!showInc()};save();render()};
 function render(){renderOpt();document.querySelectorAll(".cats").forEach(catBar);document.querySelectorAll(".flt").forEach(fltBar);renderDecks();renderShort();renderOwned()}
-document.querySelectorAll("#ownTabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#ownTabs button").forEach(x=>x.setAttribute("aria-selected",x===b));$("ownAddView").hidden=b.dataset.v!=="add";$("ownListView").hidden=b.dataset.v!=="list";requestAnimationFrame(fitAll)});
 
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
   document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x===b));
@@ -834,7 +836,8 @@ $("cardForm").onsubmit=e=>{e.preventDefault();const n=$("cardName").value.trim()
   let x=S.cards.find(c=>c.name===n);if(!x){x={id:uid(),name:n,type:$("cardType").value,manual:true};S.cards.push(x)}
   const zk=isList(d)?"main":$("addZone").value==="side"?"side":(x.type==="extra"?"extra":"main");if(!addToDeck(d,zk,x.id,1))toast(capMsg(d),"レア度が違っても同じカードとして数えます。");
   $("cardName").value="";save();renderDecks()};
-["addFilter","ownedFilter","ownSearch"].forEach(i=>$(i).oninput=render);
+["addFilter","ownSearch"].forEach(i=>$(i).oninput=render);
+$("ownFltBtn").onclick=()=>{const o=$("ownFltBox").hidden;$("ownFltBox").hidden=!o;$("ownFltBtn").setAttribute("aria-expanded",o)};
 $("addZone").onchange=renderDecks;
 // 作るものを「デッキ」「リスト」から選んでから、名前を入れて「作成」。
 // リストは単品で欲しいカード用：区分なし・1カード99枚まで・不足では上乗せで数える。名前が空なら「欲しいカード1」…
@@ -1260,6 +1263,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.15.3","2026年10月6日",["所持画面を1つにまとめました：検索欄が空なら持っているカードの一覧、入力すると全カードから探せます","所持の増減は、どちらも「−・枚数・＋」で行う形にそろえました"]],
  ["2.15.2","2026年10月6日",["不足カード画面を整理しました：上に足りない合計（値段メモがあればおおよその金額も）を表示","「集計するデッキ」は「集計：○デッキ ▸」から開くシートに","各行の＋−をなくし、カードを開いた中の「所持に＋1」「足りない分を所持に追加」で入れる形にしました"]],
  ["2.15.1","2026年10月6日",["デッキ編集画面を整理しました：操作ボタンを右上の「…」にまとめ、メイン／EX／サイド／不足の切りかえを上へ","カードは開いている区分に追加するようにし、追加先の選択欄をなくしました","カテゴリと絞り込みは「絞込」ボタンで開くように、禁止・制限の警告は1行にしました"]],
  ["2.15.0","2026年10月6日",["メニューを画面の下に移し、印付きの短い名前にしました","デッキ一覧の作成欄を、右下の「＋」から開く作成シートにまとめました（デッキ・リスト・グループの作成と、PDF・画像・文章の読み込み）","デッキ一覧の説明文と各行の「集計」の文字を整理しました"]],
