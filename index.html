@@ -30,6 +30,8 @@
   --monster:#e3a35f;--spell:#5cc9b6;--trap:#e47bb3;--extra:#a5a5f0;color-scheme:dark}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}body{position:fixed;inset:0;width:100%}
+/* 設定画面は項目が多いので、画面の中でスクロールできるようにする */
+#tab-opt{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:8px}#tab-opt>.panel{flex:none}
 .wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:8px;display:flex;flex-direction:column;gap:8px;height:100%;box-sizing:border-box;overflow:hidden}
 header{display:flex;align-items:baseline;gap:10px;justify-content:space-between}
 .grow{flex:1 1 auto;min-height:0}
@@ -1158,6 +1160,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.12.1","2026年10月6日",["設定画面がスクロールできず、下のほうの項目（アプリの情報・更新など）が見えなかった不具合を直しました"]],
  ["2.12.0","2026年10月6日",["設定に「表示」を追加しました（端末の設定に合わせるか、ダークモードのオン・オフを自分で選べます）"]],
  ["2.11.1","2026年10月6日",["グループの中のデッキに、グループの色に合わせた背景色を付けました"]],
  ["2.11.0","2026年10月6日",["「デッキ間でカードを使い回す」を、メイン・サイドのカードとEXデッキのカードで別々に設定できるようにしました"]],
