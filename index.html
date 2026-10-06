@@ -149,6 +149,13 @@ html{padding-bottom:0!important}
 .sumcard b{font-size:26px;font-family:var(--f-num);line-height:1.2}.sumcard .sl{font-size:12px;opacity:.9}
 .sumchip{all:unset;cursor:pointer;align-self:flex-start;margin-top:4px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;background:color-mix(in srgb,var(--accent-fg) 20%,transparent)}
 .sumchip[hidden]{display:none}
+.opth{font-size:12px;font-weight:700;color:var(--muted);margin:6px 4px -4px;display:flex;align-items:center;gap:6px;flex:none}
+.qbtn{all:unset;cursor:pointer;width:18px;height:18px;border-radius:50%;border:1px solid var(--muted);font-size:11px;text-align:center;line-height:18px}
+.optcard{flex:none;gap:0!important;padding-top:2px!important;padding-bottom:2px!important}
+.optcard .switchrow{padding:10px 0;border-top:1px solid var(--line);font-weight:400}.optcard>.switchrow:first-of-type,.optcard>.optrow:first-child{border-top:0}
+.optrow{all:unset;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 0;border-top:1px solid var(--line)}
+.optrow.static{cursor:default}.optrow.small{font-size:12px;color:var(--muted);padding:7px 0}.optrow .chev{color:var(--muted);font-size:18px}
+
 
 
 </style>
@@ -250,44 +257,25 @@ html{padding-bottom:0!important}
   </section>
 
   <section id="tab-opt" hidden>
-    <div class="panel">
-      <h2>不足カードの数え方</h2>
-      <div class="sub">同じカードを複数のデッキで使うときの必要枚数です。オンにすると、デッキ間でカードを使い回します。</div>
-      <label class="switchrow" for="reuseSw">
-        <span>メイン・サイドで使い回す</span>
-        <button type="button" class="switch" id="reuseSw" role="switch" aria-checked="false"><span></span></button>
-      </label>
-      <label class="switchrow" for="reuseExSw">
-        <span>EXデッキで使い回す</span>
-        <button type="button" class="switch" id="reuseExSw" role="switch" aria-checked="false"><span></span></button>
-      </label>
-      <div class="sub" id="reuseDesc"></div>
-      <label class="switchrow" for="incSw">
-        <span>不足カードに「集計するデッキ」を表示</span>
-        <button type="button" class="switch" id="incSw" role="switch" aria-checked="false"><span></span></button>
-      </label>
-      <div class="sub">オフでも、デッキ一覧の「集計」で切り替えられます。</div>
+    <div class="pagehead"><h1>設定</h1></div>
+    <div class="opth">不足カードの数え方 <button type="button" class="qbtn" id="reuseQ" aria-expanded="false" aria-label="使い回すとは">?</button></div>
+    <div class="panel optcard">
+      <div class="sub" id="reuseDesc" hidden></div>
+      <label class="switchrow" for="reuseSw"><span>メイン・サイドで使い回す</span><button type="button" class="switch" id="reuseSw" role="switch" aria-checked="false"><span></span></button></label>
+      <label class="switchrow" for="reuseExSw"><span>EXデッキで使い回す</span><button type="button" class="switch" id="reuseExSw" role="switch" aria-checked="false"><span></span></button></label>
+      <label class="switchrow" for="incSw"><span>集計するデッキを表示</span><button type="button" class="switch" id="incSw" role="switch" aria-checked="false"><span></span></button></label>
     </div>
-    <div class="panel">
-      <h2>表示</h2>
-      <label class="switchrow" for="autoThemeSw">
-        <span>端末の設定に合わせる</span>
-        <button type="button" class="switch" id="autoThemeSw" role="switch" aria-checked="true"><span></span></button>
-      </label>
-      <label class="switchrow" for="darkSw">
-        <span>ダークモード</span>
-        <button type="button" class="switch" id="darkSw" role="switch" aria-checked="false"><span></span></button>
-      </label>
-      <div class="sub" id="themeDesc"></div>
+    <div class="opth">表示</div>
+    <div class="panel optcard">
+      <label class="switchrow" for="autoThemeSw"><span>端末の設定に合わせる</span><button type="button" class="switch" id="autoThemeSw" role="switch" aria-checked="true"><span></span></button></label>
+      <label class="switchrow" for="darkSw"><span>ダークモード</span><button type="button" class="switch" id="darkSw" role="switch" aria-checked="false"><span></span></button></label>
+      <div class="sub" id="themeDesc" hidden></div>
     </div>
-    <div class="panel">
-      <h2>データのバックアップ</h2>
-      <div class="sub">デッキと所持カードをファイルに書き出します。機種変更や万一のときは、このファイルを読み込めば元に戻せます。</div>
-      <div class="row">
-        <button class="btn ghost sm" id="expBtn">ファイルに書き出す</button>
-        <button class="btn ghost sm" id="impBtn">ファイルから読み込む</button>
-        <input type="file" id="impFile" accept="application/json,.json" hidden>
-      </div>
+    <div class="opth">データ（機種変更や万一のときに）</div>
+    <div class="panel optcard">
+      <button type="button" class="optrow" id="expBtn"><span>ファイルに書き出す</span><span class="chev">›</span></button>
+      <button type="button" class="optrow" id="impBtn"><span>ファイルから読み込む</span><span class="chev">›</span></button>
+      <input type="file" id="impFile" accept="application/json,.json" hidden>
       <div class="row" id="impRow" hidden style="flex-wrap:nowrap;justify-content:space-between">
         <span style="font-size:14px" id="impMsg"></span>
         <span class="row" style="flex:none;flex-wrap:nowrap;gap:6px">
@@ -296,15 +284,12 @@ html{padding-bottom:0!important}
         </span>
       </div>
     </div>
-    <div class="panel">
-      <h2>アプリの情報</h2>
-      <dl class="info">
-        <dt>バージョン</dt><dd id="appVer">—</dd>
-        <dt>カードデータ</dt><dd id="dataVer">—</dd>
-        <dt>禁止・制限</dt><dd id="limVer">—</dd>
-      </dl>
-      <div class="sub">ネットにつながっているときに新しい版を確認します。デッキなどのデータは消えません。</div>
-      <div class="row"><button class="btn ghost sm" id="updBtn">更新を確認</button><button type="button" class="btn ghost sm" id="logBtn">更新履歴</button></div>
+    <div class="opth">アプリ</div>
+    <div class="panel optcard">
+      <div class="optrow static"><span>バージョン <b id="appVer">—</b></span><button class="btn ghost sm" id="updBtn">更新を確認</button></div>
+      <div class="optrow static small"><span>カードデータ</span><span id="dataVer">—</span></div>
+      <div class="optrow static small"><span>禁止・制限</span><span id="limVer">—</span></div>
+      <button type="button" class="optrow" id="logBtn"><span>更新履歴</span><span class="chev">›</span></button>
     </div>
   </section>
 
@@ -824,6 +809,7 @@ $("reuseSw").onclick=()=>{S.opt={...(S.opt||{}),reuseEx:reuseEx(),reuse:!reuse()
 $("autoThemeSw").onclick=()=>{const t=S.opt&&S.opt.theme;S.opt={...(S.opt||{}),theme:t?undefined:(darkMQ().matches?"dark":"light")};save();applyTheme()};
 $("darkSw").onclick=()=>{if(!(S.opt&&S.opt.theme))return;S.opt={...S.opt,theme:S.opt.theme==="dark"?"light":"dark"};save();applyTheme()};
 darkMQ().addEventListener?.("change",applyTheme);
+$("reuseQ").onclick=()=>{const o=$("reuseDesc").hidden;$("reuseDesc").hidden=!o;$("reuseQ").setAttribute("aria-expanded",o)};
 $("reuseExSw").onclick=()=>{S.opt={...(S.opt||{}),reuseEx:!reuseEx()};save();render()};
 $("incSw").onclick=()=>{S.opt={...(S.opt||{}),showInc:!showInc()};save();render()};
 function render(){renderOpt();document.querySelectorAll(".cats").forEach(catBar);document.querySelectorAll(".flt").forEach(fltBar);renderDecks();renderShort();renderOwned()}
@@ -1263,6 +1249,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.15.4","2026年10月6日",["設定画面を、見出しごとにまとめた見やすい形にしました（長い説明は「?」の中へ）"]],
  ["2.15.3","2026年10月6日",["所持画面を1つにまとめました：検索欄が空なら持っているカードの一覧、入力すると全カードから探せます","所持の増減は、どちらも「−・枚数・＋」で行う形にそろえました"]],
  ["2.15.2","2026年10月6日",["不足カード画面を整理しました：上に足りない合計（値段メモがあればおおよその金額も）を表示","「集計するデッキ」は「集計：○デッキ ▸」から開くシートに","各行の＋−をなくし、カードを開いた中の「所持に＋1」「足りない分を所持に追加」で入れる形にしました"]],
  ["2.15.1","2026年10月6日",["デッキ編集画面を整理しました：操作ボタンを右上の「…」にまとめ、メイン／EX／サイド／不足の切りかえを上へ","カードは開いている区分に追加するようにし、追加先の選択欄をなくしました","カテゴリと絞り込みは「絞込」ボタンで開くように、禁止・制限の警告は1行にしました"]],
