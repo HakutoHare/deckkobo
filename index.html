@@ -228,10 +228,14 @@ ul.list li:first-child{border-top:0}
   <section id="tab-opt" hidden>
     <div class="panel">
       <h2>不足カードの数え方</h2>
-      <div class="sub">同じカードを複数のデッキで使うときの必要枚数です。</div>
+      <div class="sub">同じカードを複数のデッキで使うときの必要枚数です。オンにすると、デッキ間でカードを使い回します。</div>
       <label class="switchrow" for="reuseSw">
-        <span>デッキ間でカードを使い回す</span>
+        <span>メイン・サイドで使い回す</span>
         <button type="button" class="switch" id="reuseSw" role="switch" aria-checked="false"><span></span></button>
+      </label>
+      <label class="switchrow" for="reuseExSw">
+        <span>EXデッキで使い回す</span>
+        <button type="button" class="switch" id="reuseExSw" role="switch" aria-checked="false"><span></span></button>
       </label>
       <div class="sub" id="reuseDesc"></div>
       <label class="switchrow" for="incSw">
@@ -659,7 +663,7 @@ $("addDiv").onclick=()=>{syncLay();const id="div:"+uid();S.divs[id]={name:"",hid
 // 戻り値：[{k:キー, need:必要, own:使える所持, lack:不足, uses:{デッキid:枚数}}]。only を渡すとそのカードidだけ
 function shortRows(decks,only){const need={},uses={};
   decks.forEach(d=>{const per={};["main","extra","side"].forEach(z=>Object.entries(d[z]).forEach(([k,n])=>{if(!card(k)||only&&!only.has(kid(k)))return;per[k]=(per[k]||0)+n}));
-    for(const k in per){need[k]=reuse()?Math.max(need[k]||0,per[k]):(need[k]||0)+per[k];(uses[k]=uses[k]||{})[d.id]=per[k]}});
+    for(const k in per){need[k]=reuseK(k)?Math.max(need[k]||0,per[k]):(need[k]||0)+per[k];(uses[k]=uses[k]||{})[d.id]=per[k]}});
   const byId={};for(const k in need)(byId[kid(k)]=byId[kid(k)]||[]).push(k);
   const out=[];
   for(const id in byId){let spare=S.owned[id]||0;
@@ -704,12 +708,17 @@ function renderShort(){
   if(!tot)ul.innerHTML=S.decks.some(inc)?(CAT.short?'<li class="okmsg">この種類で足りないカードはありません。</li>':'<li class="okmsg">足りないカードはありません。</li>'):'<li class="empty">集計するデッキを選んでください。</li>';
 }
 const reuse=()=>!!(S.opt&&S.opt.reuse);
+// EXデッキのカード（融合・シンクロ・エクシーズ・リンク）は別の設定。未設定のあいだはメインと同じ
+const reuseEx=()=>S.opt&&S.opt.reuseEx!==undefined?!!S.opt.reuseEx:reuse();
+const reuseK=k=>card(k)?.type==="extra"?reuseEx():reuse();
 // 不足カードの「集計するデッキ」枠は既定で隠す（デッキ一覧の「集計」で切り替えられるため）
 const showInc=()=>!!(S.opt&&S.opt.showInc);
-function renderOpt(){const r=reuse();$("reuseSw").setAttribute("aria-checked",r);$("incSw").setAttribute("aria-checked",showInc());$("incPanel").hidden=!showInc();
-  $("reuseDesc").textContent=r?"デッキ間でカードを使い回します。必要枚数は、そのカードをいちばん多く使っているデッキの枚数です（例：Aで3枚、Bで2枚なら3枚）。":"デッキごとに別々に揃えます。必要枚数は、各デッキで使う枚数の合計です（例：Aで3枚、Bで2枚なら5枚）。";
-  $("shortRule").textContent=r?"押すと含める／外すを切り替え。カードは使い回す前提で、最も多いデッキの枚数が必要数です。":"押すと含める／外すを切り替え。同じカードは全デッキの合計枚数が必要数です。"}
-$("reuseSw").onclick=()=>{S.opt={...(S.opt||{}),reuse:!reuse()};save();render()};
+function renderOpt(){const r=reuse(),rx=reuseEx();$("reuseSw").setAttribute("aria-checked",r);$("reuseExSw").setAttribute("aria-checked",rx);$("incSw").setAttribute("aria-checked",showInc());$("incPanel").hidden=!showInc();
+  $("reuseDesc").textContent="オン：必要枚数は、そのカードをいちばん多く使っているデッキの枚数です（例：Aで3枚、Bで2枚なら3枚）。オフ：各デッキで使う枚数の合計です（例：Aで3枚、Bで2枚なら5枚）。";
+  const w=x=>x?"最も多いデッキの枚数":"全デッキの合計枚数";
+  $("shortRule").textContent=r===rx?`押すと含める／外すを切り替え。同じカードは${w(r)}が必要数です。`:`押すと含める／外すを切り替え。必要数は、メイン・サイドのカードが${w(r)}、EXデッキのカードが${w(rx)}です。`}
+$("reuseSw").onclick=()=>{S.opt={...(S.opt||{}),reuseEx:reuseEx(),reuse:!reuse()};save();render()};
+$("reuseExSw").onclick=()=>{S.opt={...(S.opt||{}),reuseEx:!reuseEx()};save();render()};
 $("incSw").onclick=()=>{S.opt={...(S.opt||{}),showInc:!showInc()};save();render()};
 function render(){renderOpt();document.querySelectorAll(".cats").forEach(catBar);document.querySelectorAll(".flt").forEach(fltBar);renderDecks();renderShort();renderOwned()}
 document.querySelectorAll("#ownTabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#ownTabs button").forEach(x=>x.setAttribute("aria-selected",x===b));$("ownAddView").hidden=b.dataset.v!=="add";$("ownListView").hidden=b.dataset.v!=="list";requestAnimationFrame(fitAll)});
@@ -741,9 +750,9 @@ let _add=null,_addDef=null,_addMax=null,_ownMode="add";
 function openOwnAdd(mode){const d=deck();if(!d)return;_ownMode=mode;const need=deckNeed(d),sub=mode==="sub";
   const ids=sortIds(Object.keys(need).filter(i=>!sub||(S.owned[i]||0)>0));
   if(!ids.length){toast(sub?"このデッキのカードは所持していません":"このデッキにはカードがありません",null,"ok");return}
-  _addDef={};_addMax={};ids.forEach(i=>{const o=S.owned[i]||0;_addMax[i]=sub?o:9;_addDef[i]=sub?Math.min(need[i],o):reuse()?Math.max(0,need[i]-o):need[i]});_add={..._addDef};
+  _addDef={};_addMax={};ids.forEach(i=>{const o=S.owned[i]||0;_addMax[i]=sub?o:9;_addDef[i]=sub?Math.min(need[i],o):reuseK(i)?Math.max(0,need[i]-o):need[i]});_add={..._addDef};
   $("ownModalTitle").textContent=sub?"所持から削除":"所持に追加";
-  $("ownModalRule").textContent=sub?"デッキで使う枚数を初期値にしています（所持している枚数まで）。":reuse()?"「デッキ間でカードを使い回す」がオンなので、足りない分だけを初期値にしています。":"「デッキ間でカードを使い回す」がオフなので、デッキの枚数をそのまま初期値にしています。";
+  $("ownModalRule").textContent=sub?"デッキで使う枚数を初期値にしています（所持している枚数まで）。":reuse()===reuseEx()?(reuse()?"カードを使い回す設定なので、足りない分だけを初期値にしています。":"カードを使い回さない設定なので、デッキの枚数をそのまま初期値にしています。"):"使い回す設定のカードは足りない分だけ、使い回さない設定のカードはデッキの枚数を初期値にしています。";
   $("ownModalOk").textContent=sub?"削除する":"追加する";$("ownModalOk").className="btn sm"+(sub?" del":"");
   renderOwnAdd();$("ownModalList").scrollTop=0;$("ownModal").hidden=false}
 function renderOwnAdd(){const ul=$("ownModalList"),top=ul.scrollTop;ul.innerHTML="";const need=deckNeed(deck());
@@ -1127,6 +1136,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.11.0","2026年10月6日",["「デッキ間でカードを使い回す」を、メイン・サイドのカードとEXデッキのカードで別々に設定できるようにしました"]],
  ["2.10.4","2026年10月6日",["グループの設定ボタンを、線で描いたシンプルな歯車のボタンにしました"]],
  ["2.10.2","2026年10月6日",["新しいグループに「グループ1」「グループ2」…と番号付きの名前を付けるようにしました"]],
  ["2.10.1","2026年10月6日",["グループの行にも「集計」のスイッチを付けました（設定内のチェックはなくしました）","不足カードの「集計するデッキ」をグループごとに分けて表示するようにしました"]],
