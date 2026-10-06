@@ -138,6 +138,14 @@ html{padding-bottom:0!important}
 .kindsw.k3{display:flex}.kindsw.k3 button{flex:1;text-align:center;padding:7px 0}.kindsw.k3 .thumb{width:calc((100% - 6px)/3)}.kindsw.k3[data-k="list"] .thumb{transform:translateX(100%)}.kindsw.k3[data-k="group"] .thumb{transform:translateX(200%)}
 .imp3{flex-wrap:nowrap!important}.imp3 .btn{flex:1}
 #deckList{padding-bottom:70px}
+.ehdr{align-items:center;gap:6px!important}.ehdr .decktitle{flex:1;min-width:0}
+.iconbtn{all:unset;flex:none;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--accent);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.iconbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}.iconbtn circle{fill:currentColor;stroke:none}
+.sheet.menu{gap:4px}.mi{all:unset;cursor:pointer;padding:13px 6px;border-bottom:1px solid var(--line);font-weight:700;font-size:15px;color:var(--fg)}.mi.del{color:var(--warn);border-bottom:0}.sheet.menu .btn{margin-top:6px}
+.limbtn{all:unset;cursor:pointer;font-weight:700}.limwarn div{font-size:12px;margin-top:2px}
+#addFltBtn[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+#zoneTabs{flex:none}
+
 </style>
 </head>
 <body>
@@ -162,20 +170,23 @@ html{padding-bottom:0!important}
    </div>
    <div id="deckEditView" class="col" hidden>
     <div class="panel">
-      <div class="row hdr">
-        <button class="btn ghost sm" id="backToList">← 一覧</button>
-        <span style="flex:1"></span>
-        <button class="btn ghost sm" id="ownAll">所持追加</button>
-        <button class="btn ghost sm" id="ownSub">所持削除</button>
-        <button class="btn ghost sm" id="moreDeck" aria-expanded="false">その他</button>
-        <button class="btn del sm" id="delDeck">削除</button>
+      <div class="row hdr ehdr">
+        <button type="button" class="iconbtn" id="backToList" aria-label="一覧に戻る"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <div class="decktitle" id="deckTitle"></div>
+        <button type="button" class="iconbtn" id="moreDeck" aria-expanded="false" aria-label="そのほかの操作"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>
       </div>
-      <div class="decktitle" id="deckTitle"></div>
       <div class="limwarn" id="limWarn" hidden></div>
-      <div class="row" id="moreRow" hidden style="gap:6px">
-        <button type="button" class="btn ghost sm" id="renameDeck">名前変更</button>
-        <button type="button" class="btn ghost sm" id="dupDeck">複製</button>
-        <button type="button" class="btn ghost sm" id="copyDeck">文章でコピー</button>
+      <div class="sheetbg" id="moreRow" hidden>
+        <div class="sheet menu" role="dialog" aria-modal="true" aria-label="そのほかの操作">
+          <div class="grab"></div>
+          <button type="button" class="mi" id="ownAll">デッキのカードを所持に追加</button>
+          <button type="button" class="mi" id="ownSub">デッキのカードを所持から削除</button>
+          <button type="button" class="mi" id="renameDeck">名前を変更</button>
+          <button type="button" class="mi" id="dupDeck">複製</button>
+          <button type="button" class="mi" id="copyDeck">文章でコピー</button>
+          <button type="button" class="mi del" id="delDeck">削除</button>
+          <button type="button" class="btn ghost" id="moreClose">閉じる</button>
+        </div>
       </div>
       <div class="row" id="renameRow" hidden>
         <input type="text" id="renameInput" placeholder="デッキ名">
@@ -189,15 +200,17 @@ html{padding-bottom:0!important}
         </span>
       </div>
     </div>
+    <div class="seg" id="zoneTabs" role="tablist"></div>
     <div class="panel">
       <div class="row" style="flex-wrap:nowrap">
-        <select id="addZone" style="flex:none;height:32px;padding:0 6px;font-size:13px" aria-label="追加先"><option value="auto">メイン/EX</option><option value="side">サイド</option></select>
-        <input type="search" id="addFilter" placeholder="カード名か読み仮名（例：しえろ）" style="flex:1 1 0">
+        <select id="addZone" hidden aria-hidden="true"><option value="auto">メイン/EX</option><option value="side">サイド</option></select>
+        <input type="search" id="addFilter" placeholder="カードを追加（名前か読み仮名）" style="flex:1 1 0">
+        <button type="button" class="btn ghost sm" id="addFltBtn" aria-expanded="false">絞込</button>
       </div>
-      <div class="hscroll cats" data-k="add"></div>
-      <div class="flt" data-k="add"></div>
+      <div id="addFltBox" hidden><div class="hscroll cats" data-k="add"></div>
+      <div class="flt" data-k="add"></div></div>
       <ul class="list picker" id="addList"></ul>
-      <details>
+      <details id="manualAdd" hidden>
         <summary class="sub">一覧にないカードを手入力で追加</summary>
         <form class="row" id="cardForm" style="margin-top:8px">
           <input type="text" id="cardName" placeholder="カード名" required>
@@ -207,7 +220,6 @@ html{padding-bottom:0!important}
       </details>
     </div>
     <div class="panel grow">
-      <div class="seg" id="zoneTabs" role="tablist"></div>
       <ul class="list" id="zoneList"></ul>
       <ul class="list" id="shortList" hidden></ul>
     </div>
@@ -572,11 +584,17 @@ function renderDecks(){
   $("deckTitle").textContent=d.name;requestAnimationFrame(fitTitle);
   {const over=[];const ids=new Set();["main","extra","side"].forEach(z=>Object.keys(d[z]).forEach(k=>ids.add(kid(k))));
     if(!isList(d))ids.forEach(id=>{const c=card(id);if(!c||!(c.name in LIMIT))return;const n=deckCnt(d,id),m=LIMIT[c.name];if(n>m)over.push(`${c.name}（${LIMLAB[m]}・${n}枚）`)});
-    $("limWarn").hidden=!over.length;$("limWarn").textContent=over.length?`禁止・制限を超えています：${over.join("、")}`:""}
+    $("limWarn").hidden=!over.length;
+    // 普段は1行。押すとどのカードかを出す
+    $("limWarn").innerHTML=over.length?`<button type="button" class="limbtn" aria-expanded="${!!OPEN.lim}">⚠ 禁止・制限を超えています（${over.length}種） ${OPEN.lim?"▼":"▶"}</button>${OPEN.lim?`<div>${esc(over.join("、"))}</div>`:""}`:"";
+    const lb=$("limWarn").querySelector(".limbtn");if(lb)lb.onclick=()=>{OPEN.lim=!OPEN.lim;renderDecks()}}
   const has=!!d;["moreDeck","delDeck"].forEach(i=>$(i).disabled=!has);
+  // 追加先は開いている区分（サイドを開いていればサイド、それ以外はカードの種類でメイン／EX）
+  $("addZone").value=curZone==="side"?"side":"auto";$("manualAdd").hidden=!$("addFilter").value.trim();
+  $("addFltBtn").setAttribute("aria-pressed",!!(CAT.add||fltOn("add")));
     if(!d)return;
   const z=$("addZone").value;
-  const zoneOf=c=>isList(d)?"main":z==="side"?"side":(c.type==="extra"?"extra":"main");$("addZone").hidden=isList(d);
+  const zoneOf=c=>isList(d)?"main":z==="side"?"side":(c.type==="extra"?"extra":"main");
   pickList($("addList"),$("addFilter").value,c=>isList(d)?"＋1":"＋"+ZONE[zoneOf(c)],c=>{const id=ensure(c),zk=zoneOf(c);if(!addToDeck(d,zk,id,1))toast(capMsg(d),"レア度が違っても同じカードとして数えます。");save();renderDecks()},CAT.add,"add");
   const zt=$("zoneTabs");zt.innerHTML="";const zl=$("zoneList");zl.innerHTML="";
   const [cm,cx,cs]=cnt(d);
@@ -585,7 +603,7 @@ function renderDecks(){
   zl.hidden=curZone==="short";$("shortList").hidden=curZone!=="short";
   if(curZone!=="short"){const zk=curZone;const ids=sortIds(Object.keys(d[zk]).filter(card));
     if(!ids.length)zl.innerHTML='<li class="empty">まだカードがありません。上の検索から追加してください。</li>';
-    grouped(zl,ids.map(item),c=>d[zk][c.id],c=>{const i=c.id;return detailRow(zl,limRow(d,c,li(c,qty(d[zk][i],dv=>{if(dv>0&&deckCnt(d,kid(i))>=capOf(d)){toast(capMsg(d),"レア度が違っても同じカードとして数えます。");return}const v=d[zk][i]+dv;if(v<=0){delete d[zk][i];gc()}else d[zk][i]=v;save();renderDecks()}))),"deck:"+zk,i,c,[["レア度を変更",()=>openDeckRar(zk,kid(i))]])});}
+    grouped(zl,ids.map(item),c=>d[zk][c.id],c=>{const i=c.id;return detailRow(zl,limRow(d,c,li(c,qty(d[zk][i],dv=>{if(dv>0&&deckCnt(d,kid(i))>=capOf(d)){toast(capMsg(d),"レア度が違っても同じカードとして数えます。");return}const v=d[zk][i]+dv;if(v<=0){delete d[zk][i];gc()}else d[zk][i]=v;save();renderDecks()}))),"deck:"+zk,i,c,[["レア度",()=>openDeckRar(zk,kid(i))]])});}
   // 不足は「不足カード」タブと同じ全体の計算（集計中のデッキ＋このデッキ、設定の数え方に合わせる）で出し、このデッキで使うカードだけを並べる
   const mine=new Set(Object.keys(deckNeed(d)).map(kid));
   const sl=$("shortList");sl.innerHTML="";let tot=0;
@@ -834,7 +852,11 @@ $("newDeckForm").onsubmit=e=>{e.preventDefault();let n=$("newDeckName").value.tr
   if(!n){$("newDeckName").focus();toast("デッキ名を入れてください");return}
   const d={id:uid(),name:n,main:{},extra:{},side:{},inc:true};S.decks.push(d);$("newDeckName").value="";okMsg=`「${n}」を保存しました`;openDeck(d.id)};
 $("backToList").onclick=()=>{view="list";$("moreRow").hidden=true;$("renameRow").hidden=true;$("delRow").hidden=true;renderDecks()};
-$("moreDeck").onclick=()=>{const o=$("moreRow").hidden;$("moreRow").hidden=!o;$("moreDeck").setAttribute("aria-expanded",o);if(!o)$("renameRow").hidden=true};
+$("moreDeck").onclick=()=>{$("moreRow").hidden=false;$("renameRow").hidden=true;$("delRow").hidden=true};
+$("moreClose").onclick=()=>{$("moreRow").hidden=true};$("moreRow").onclick=e=>{if(e.target===$("moreRow"))$("moreRow").hidden=true};
+["ownAll","ownSub","delDeck"].forEach(i=>$(i).addEventListener("click",()=>{$("moreRow").hidden=true}));
+// 絞り込み（カテゴリ・属性など）は使うときだけ開く
+$("addFltBtn").onclick=()=>{const o=$("addFltBox").hidden;$("addFltBox").hidden=!o;$("addFltBtn").setAttribute("aria-expanded",o)};
 $("renameDeck").onclick=()=>{$("moreRow").hidden=true;$("renameRow").hidden=false;$("renameInput").value=deck()?.name||"";noZoom($("renameInput"));$("renameInput").focus()};
 $("renameOk").onclick=()=>{const v=$("renameInput").value.trim();let m=null;if(v&&deck()&&deck().name!==v){deck().name=v;m=`デッキ名を「${v}」に変更しました`}$("renameRow").hidden=true;save(m);renderDecks()};
 // デッキのカードを所持にまとめて登録／差し引く。枚数はメイン・EX・サイドの合計
@@ -1151,7 +1173,7 @@ function detailRow(ul,l,listId,k,c,buttons,opt={}){const nm=l.querySelector(".na
   if(opt.info){const inf=document.createElement("div");inf.className="dinfo";inf.textContent=opt.info;box.append(inf)}
   const ct=document.createElement("div");ct.className="ctext";ct.style.flexBasis="100%";box.append(ct);
   // 相場：遊戯王相場（yugiohsouba.com）のカードページはカード名から作れないので、サイト内を Google で検索して開く
-  if(!c.manual){const a=document.createElement("a");a.className="btn ghost";a.textContent="相場を調べる";a.target="_blank";a.rel="noopener";
+  if(!c.manual){const a=document.createElement("a");a.className="btn ghost";a.textContent="相場";a.target="_blank";a.rel="noopener";
     a.href="https://www.google.com/search?q="+encodeURIComponent(`site:yugiohsouba.com ${c.name.normalize("NFKC")} ${soubaRar(c.rar)}`);box.append(a)}
   {const pb=document.createElement("button");pb.type="button";pb.className="btn ghost sm";pb.textContent="値段メモ";pb.onclick=()=>openPrice(c.name);box.append(pb);
     const ps=priceSum(c.name);if(ps){const d=document.createElement("div");d.className="dinfo psum";d.textContent=ps;box.prepend(d)}}
@@ -1236,6 +1258,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.15.1","2026年10月6日",["デッキ編集画面を整理しました：操作ボタンを右上の「…」にまとめ、メイン／EX／サイド／不足の切りかえを上へ","カードは開いている区分に追加するようにし、追加先の選択欄をなくしました","カテゴリと絞り込みは「絞込」ボタンで開くように、禁止・制限の警告は1行にしました"]],
  ["2.15.0","2026年10月6日",["メニューを画面の下に移し、印付きの短い名前にしました","デッキ一覧の作成欄を、右下の「＋」から開く作成シートにまとめました（デッキ・リスト・グループの作成と、PDF・画像・文章の読み込み）","デッキ一覧の説明文と各行の「集計」の文字を整理しました"]],
  ["2.14.1","2026年10月6日",["値段メモで、有名な店舗名をタップで入力できるようにしました（一度入力した店舗も並びます）"]],
  ["2.14.0","2026年10月6日",["カードごとの「値段メモ」を追加しました（店舗名・レア度・値段を何件でも記録し、中央値・平均・最安・最高を表示）"]],
