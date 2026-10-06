@@ -145,6 +145,11 @@ html{padding-bottom:0!important}
 .limbtn{all:unset;cursor:pointer;font-weight:700}.limwarn div{font-size:12px;margin-top:2px}
 #addFltBtn[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
 #zoneTabs{flex:none}
+.sumcard{background:var(--accent);color:var(--accent-fg);border-radius:14px;padding:10px 14px;display:flex;flex-direction:column;gap:2px;flex:none}
+.sumcard b{font-size:26px;font-family:var(--f-num);line-height:1.2}.sumcard .sl{font-size:12px;opacity:.9}
+.sumchip{all:unset;cursor:pointer;align-self:flex-start;margin-top:4px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;background:color-mix(in srgb,var(--accent-fg) 20%,transparent)}
+.sumchip[hidden]{display:none}
+
 
 </style>
 </head>
@@ -227,20 +232,20 @@ html{padding-bottom:0!important}
   </section>
 
   <section id="tab-short" hidden>
-    <div class="panel" id="incPanel">
-      <h2><button type="button" id="incHead" class="inchead" aria-expanded="false"></button></h2>
-      <div id="incBody" hidden><div class="sub" id="shortRule"></div>
-      <div class="inclist" id="incToggles"></div></div>
+    <div class="pagehead"><h1>不足カード</h1><span style="flex:1"></span><button type="button" class="iconbtn" id="copyShort" aria-label="不足カードを文章でコピー" title="文章でコピー"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></button></div>
+    <div class="sumcard"><div class="sl">足りないカード</div><div><b id="totShortCount">0枚</b> <span class="sl" id="shortSub"></span></div>
+      <button type="button" class="sumchip" id="incChip"></button></div>
+    <div class="sheetbg" id="incPanel" hidden>
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="incTitle">
+        <div class="grab"></div>
+        <div class="row" style="flex-wrap:nowrap"><h2 id="incTitle" style="flex:1">集計するデッキ</h2><button type="button" class="btn ghost sm" id="incClose">閉じる</button></div>
+        <div class="sub" id="shortRule"></div>
+        <div class="inclist" id="incToggles"></div>
+      </div>
     </div>
     <div class="panel grow">
-      <div class="row" style="flex-wrap:nowrap"><h2 style="flex:1">足りないカード <span class="count" id="totShortCount"></span></h2><button type="button" class="btn ghost sm" id="copyShort">コピー</button></div>
       <div class="hscroll cats" data-k="short"></div>
       <ul class="list" id="totShortList"></ul>
-      <div class="row" id="buyRow" style="flex-wrap:nowrap" hidden>
-        <span class="count" id="buyTot" style="flex:1"></span>
-        <button type="button" class="btn ghost sm" id="buyClear">クリア</button>
-        <button type="button" class="btn sm" id="buyOk">所持に追加</button>
-      </div>
     </div>
   </section>
 
@@ -770,31 +775,29 @@ function renderShort(){
     h.innerHTML=`<span class="divfold">${v.foldInc?"▶":"▼"}</span>${esc(v.name||"グループ")}<small>${v.decks.length}デッキ・集計中${on}</small>`;
     h.onclick=()=>{v.foldInc=!v.foldInc;save();renderShort()};box.append(h);
     if(!v.foldInc)v.decks.forEach(y=>{const b=incBtnFor(S.decks.find(d=>d.id===y));b.classList.add("ingrp");box.append(b)});t.append(box)});
-  // 集計するデッキは普段たたんでおき、見出しを押すと縦の一覧で開く
-  {const open=!!OPEN.inc,h=$("incHead");h.textContent=`${open?"▼":"▶"} 集計するデッキ（${S.decks.filter(incOn).length}／${S.decks.filter(d=>!incHide(d)).length}）`;h.setAttribute("aria-expanded",open);$("incBody").hidden=!open;h.onclick=()=>{OPEN.inc=!open;renderShort()}}
+  // 集計するデッキは「集計：○デッキ ▸」にしまい、押すとシートで選ぶ
+  $("incChip").textContent=`集計：${S.decks.filter(incOn).length}／${S.decks.filter(d=>!incHide(d)).length}デッキ ▸`;
   const ul=$("totShortList");ul.innerHTML="";let tot=0;
   const rows=shortRows(S.decks.filter(incOn)).filter(r=>r.lack>0).map(r=>[r.k,r.need,r.lack,r.own,r.uses]);
-  // 買う予定の枚数は不足分まで。足りたカードや一覧から消えたカードの分は捨てる
-  const lacks=Object.fromEntries(rows.map(r=>[r[0],r[2]]));for(const i in _buy){_buy[i]=Math.min(_buy[i],lacks[i]||0);if(!_buy[i])delete _buy[i]}
+  let yenSum=0,yenN=0;
   const byKey=Object.fromEntries(rows.map(r=>[r[0],r]));
   groupsOf(rows.map(r=>item(r[0])).filter(c=>!CAT.short||c.type===CAT.short).sort(cmp)).forEach(([ty,label,gc,xs])=>{
     const g=gc.map(c=>byKey[c.id]);
     const sub=g.reduce((a,r)=>a+r[2],0);
     const h=document.createElement("li");h.className="grouphead g-"+ty+(xs&&xs!=="o"?" gx-"+xs:"");h.tabIndex=0;h.setAttribute("role","button");h.title="このカテゴリの先頭へ";{const go=()=>ul.scrollTo({top:h.offsetTop,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});h.onclick=go;h.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}}}h.innerHTML=`<span class="glab">${label}</span><span class="count">${g.length}種・${sub}枚</span>`;ul.append(h);
     g.forEach(([i,n,lack,own,us])=>{
-      tot+=lack;const w=document.createElement("span");w.style.textAlign="right";
+      tot+=lack;const w=document.createElement("span");w.style.cssText="flex:none;text-align:right";
       w.innerHTML=`<span class="short">あと${lack}枚</span><span class="uses">所持${own}／必要${n}</span>`;
-      // ＋−で変えるのは「買って所持に追加する予定の枚数」（0〜不足分）。下の「所持に追加」で確定する
-      const q=qty(_buy[i]||0,dv=>{const v=Math.max(0,Math.min(lack,(_buy[i]||0)+dv));if(v)_buy[i]=v;else delete _buy[i];renderShort()});
-      q.querySelectorAll("button").forEach((x,k)=>x.setAttribute("aria-label",k?"追加する枚数を増やす":"追加する枚数を減らす"));q.onclick=e=>e.stopPropagation();q.onkeydown=e=>e.stopPropagation();
-      const wr=document.createElement("span");wr.className="row";wr.style.cssText="flex:none;flex-wrap:nowrap;gap:8px";wr.append(w,q);
-      // ほかの一覧と同じく、カード名のタップで効果と「使っているデッキ」のボタンを開く（1枚ずつ）
-      const btns=Object.entries(us).map(([did,v])=>[`${S.decks.find(x=>x.id===did).name}（${v}枚）`,()=>{goTab("decks");openDeck(did)}]);
+      {const pm=(S.prices||{})[item(i).name],st=pm&&pstat(pm);if(st){yenSum+=st.med*lack;yenN++}}
+      // カードを開くと、買った分を所持に入れるボタンと「使っているデッキ」のボタンが出る
+      const addOwn=v=>{S.owned[i]=(S.owned[i]||0)+v;save(`「${item(i).name}」を所持に${v}枚追加しました`);render()};
+      const btns=[["所持に＋1",()=>addOwn(1)],...(lack>1?[[`足りない${lack}枚を所持に追加`,()=>addOwn(lack)]]:[]),...Object.entries(us).map(([did,v])=>[`${S.decks.find(x=>x.id===did).name}（${v}枚）`,()=>{goTab("decks");openDeck(did)}])];
+      const wr=w;
       ul.append(...detailRow(ul,li(item(i),wr),"short",i,item(i),btns));
     });
   });
-  $("totShortCount").textContent=tot?`計${tot}枚`:"";
-  const bt=Object.values(_buy).reduce((a,b)=>a+b,0);$("buyRow").hidden=!tot;$("buyTot").textContent=bt?`追加：${bt}枚`:"＋で枚数を選択";$("buyOk").disabled=!bt;$("buyClear").disabled=!bt;
+  $("totShortCount").textContent=`${tot}枚`;
+  $("shortSub").textContent=tot?`${rows.filter(r=>!CAT.short||item(r[0]).type===CAT.short).length}種`+(yenN?`・値段メモから約${yen(yenSum)}（${yenN}種分）`:""):"";
   if(!tot)ul.innerHTML=S.decks.some(inc)?(CAT.short?'<li class="okmsg">この種類で足りないカードはありません。</li>':'<li class="okmsg">足りないカードはありません。</li>'):'<li class="empty">集計するデッキを選んでください。</li>';
 }
 const reuse=()=>!!(S.opt&&S.opt.reuse);
@@ -810,7 +813,7 @@ function applyTheme(){const t=S.opt&&S.opt.theme,dark=t?t==="dark":darkMQ().matc
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content",dark?"#15141d":"#3b3a8f");
   const a=$("autoThemeSw"),d=$("darkSw");if(!a)return;a.setAttribute("aria-checked",!t);d.setAttribute("aria-checked",dark);d.disabled=!t;
   $("themeDesc").textContent=t?"ダークモードのオン・オフを自分で選びます。":`端末の設定に合わせています（今は${dark?"ダーク":"ライト"}）。オフにすると、ダークモードを自分で選べます。`}
-function renderOpt(){applyTheme();const r=reuse(),rx=reuseEx();$("reuseSw").setAttribute("aria-checked",r);$("reuseExSw").setAttribute("aria-checked",rx);$("incSw").setAttribute("aria-checked",showInc());$("incPanel").hidden=!showInc();
+function renderOpt(){applyTheme();const r=reuse(),rx=reuseEx();$("reuseSw").setAttribute("aria-checked",r);$("reuseExSw").setAttribute("aria-checked",rx);$("incSw").setAttribute("aria-checked",showInc());$("incChip").hidden=!showInc();
   $("reuseDesc").textContent="オン：必要枚数は、そのカードをいちばん多く使っているデッキの枚数です（例：Aで3枚、Bで2枚なら3枚）。オフ：各デッキで使う枚数の合計です（例：Aで3枚、Bで2枚なら5枚）。";
   const w=x=>x?"最も多いデッキの枚数":"全デッキの合計枚数";
   $("shortRule").textContent=r===rx?`押すと含める／外すを切り替え。同じカードは${w(r)}が必要数です。`:`押すと含める／外すを切り替え。必要数は、メイン・サイドのカードが${w(r)}、EXデッキのカードが${w(rx)}です。`}
@@ -861,8 +864,7 @@ $("renameDeck").onclick=()=>{$("moreRow").hidden=true;$("renameRow").hidden=fals
 $("renameOk").onclick=()=>{const v=$("renameInput").value.trim();let m=null;if(v&&deck()&&deck().name!==v){deck().name=v;m=`デッキ名を「${v}」に変更しました`}$("renameRow").hidden=true;save(m);renderDecks()};
 // デッキのカードを所持にまとめて登録／差し引く。枚数はメイン・EX・サイドの合計
 const deckNeed=d=>{const need={};["main","extra","side"].forEach(zk=>Object.entries(d[zk]).forEach(([i,n])=>{if(card(i))need[i]=(need[i]||0)+n}));return need};
-$("buyClear").onclick=()=>{for(const i in _buy)delete _buy[i];renderShort()};
-$("buyOk").onclick=()=>{let k=0;for(const i in _buy){if(card(i)){S.owned[i]=(S.owned[i]||0)+_buy[i];k+=_buy[i]}delete _buy[i]}if(!k)return;save(`所持に${k}枚追加しました`);render()};
+$("incChip").onclick=()=>{$("incPanel").hidden=false};$("incClose").onclick=()=>{$("incPanel").hidden=true};$("incPanel").onclick=e=>{if(e.target===$("incPanel"))$("incPanel").hidden=true};
 // 所持追加／所持削除：カードごとに枚数を選ぶウィンドウ
 //   追加の初期値は設定の「デッキ間でカードを使い回す」に合わせる（使い回す → 足りない分だけ／使い回さない → デッキの枚数をそのまま）
 //   削除の初期値はデッキで使う枚数（所持している枚数まで）。所持していないカードは出さない
@@ -1258,6 +1260,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.15.2","2026年10月6日",["不足カード画面を整理しました：上に足りない合計（値段メモがあればおおよその金額も）を表示","「集計するデッキ」は「集計：○デッキ ▸」から開くシートに","各行の＋−をなくし、カードを開いた中の「所持に＋1」「足りない分を所持に追加」で入れる形にしました"]],
  ["2.15.1","2026年10月6日",["デッキ編集画面を整理しました：操作ボタンを右上の「…」にまとめ、メイン／EX／サイド／不足の切りかえを上へ","カードは開いている区分に追加するようにし、追加先の選択欄をなくしました","カテゴリと絞り込みは「絞込」ボタンで開くように、禁止・制限の警告は1行にしました"]],
  ["2.15.0","2026年10月6日",["メニューを画面の下に移し、印付きの短い名前にしました","デッキ一覧の作成欄を、右下の「＋」から開く作成シートにまとめました（デッキ・リスト・グループの作成と、PDF・画像・文章の読み込み）","デッキ一覧の説明文と各行の「集計」の文字を整理しました"]],
  ["2.14.1","2026年10月6日",["値段メモで、有名な店舗名をタップで入力できるようにしました（一度入力した店舗も並びます）"]],
