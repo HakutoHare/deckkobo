@@ -135,11 +135,11 @@ ul.list li:first-child{border-top:0}
   <section id="tab-decks">
    <div id="deckListView" class="col">
     <div class="panel">
-      <h2>デッキを作成</h2>
+      <div class="row" style="flex-wrap:nowrap"><h2 style="flex:1">新しく作る</h2>
+        <div class="seg" id="newKind" role="tablist" style="flex:none"><button type="button" role="tab" data-k="deck" aria-selected="true">デッキ</button><button type="button" role="tab" data-k="list" aria-selected="false">リスト</button></div></div>
       <form class="row" id="newDeckForm">
-        <input type="text" id="newDeckName" placeholder="名前を入力">
+        <input type="text" id="newDeckName" placeholder="デッキ名を入力">
         <button class="btn">作成</button>
-        <button type="button" class="btn ghost" id="newListBtn" title="デッキとは別に、単品で欲しいカードのリストを作ります">リスト</button>
       </form>
       <div class="row" style="flex-wrap:nowrap">
         <span class="sub" style="flex:1">デッキリストを読み込む</span>
@@ -771,10 +771,14 @@ $("cardForm").onsubmit=e=>{e.preventDefault();const n=$("cardName").value.trim()
   $("cardName").value="";save();renderDecks()};
 ["addFilter","ownedFilter","ownSearch"].forEach(i=>$(i).oninput=render);
 $("addZone").onchange=renderDecks;
-// 単品で欲しいカードのリスト：デッキと同じ仕組みで、区分なし・1カード99枚まで・不足では上乗せで数える
-$("newListBtn").onclick=()=>{let n=$("newDeckName").value.trim();if(!n){let i=1;while(S.decks.some(d=>d.name==="欲しいカード"+i))i++;n="欲しいカード"+i}
-  const d={id:uid(),name:n,kind:"list",main:{},extra:{},side:{},inc:true};S.decks.push(d);$("newDeckName").value="";okMsg=`リスト「${n}」を作りました`;openDeck(d.id)};
-$("newDeckForm").onsubmit=e=>{e.preventDefault();const n=$("newDeckName").value.trim();if(!n){$("newDeckName").focus();toast("デッキ名を入れてください");return}
+// 作るものを「デッキ」「リスト」から選んでから、名前を入れて「作成」。
+// リストは単品で欲しいカード用：区分なし・1カード99枚まで・不足では上乗せで数える。名前が空なら「欲しいカード1」…
+let newKind="deck";
+document.querySelectorAll("#newKind button").forEach(b=>b.onclick=()=>{newKind=b.dataset.k;document.querySelectorAll("#newKind button").forEach(x=>x.setAttribute("aria-selected",x===b));$("newDeckName").placeholder=newKind==="list"?"リスト名を入力":"デッキ名を入力";$("newDeckName").focus()});
+$("newDeckForm").onsubmit=e=>{e.preventDefault();let n=$("newDeckName").value.trim();
+  if(newKind==="list"){if(!n){let i=1;while(S.decks.some(d=>d.name==="欲しいカード"+i))i++;n="欲しいカード"+i}
+    const d={id:uid(),name:n,kind:"list",main:{},extra:{},side:{},inc:true};S.decks.push(d);$("newDeckName").value="";okMsg=`リスト「${n}」を作りました`;openDeck(d.id);return}
+  if(!n){$("newDeckName").focus();toast("デッキ名を入れてください");return}
   const d={id:uid(),name:n,main:{},extra:{},side:{},inc:true};S.decks.push(d);$("newDeckName").value="";okMsg=`「${n}」を保存しました`;openDeck(d.id)};
 $("backToList").onclick=()=>{view="list";$("moreRow").hidden=true;$("renameRow").hidden=true;$("delRow").hidden=true;renderDecks()};
 $("moreDeck").onclick=()=>{const o=$("moreRow").hidden;$("moreRow").hidden=!o;$("moreDeck").setAttribute("aria-expanded",o);if(!o)$("renameRow").hidden=true};
@@ -1177,6 +1181,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.13.4","2026年10月6日",["作成欄で「デッキ」か「リスト」を先に選び、名前を入れて「作成」で作る形にそろえました"]],
  ["2.13.3","2026年10月6日",["不足カードの「集計するデッキ」で、グループの見出しを押すとたたんだり開いたりできるようにしました"]],
  ["2.13.2","2026年10月6日",["不足カードの「集計するデッキ」で、グループとその中のデッキをグループの色の背景でまとめて表示するようにしました"]],
  ["2.13.1","2026年10月6日",["単品で欲しいカードの「リスト」を作れるようにしました（デッキ一覧の「リスト」ボタン）","リストは区分なしで1カード99枚まで入れられ、不足カードではデッキの必要数に上乗せして数えます"]],
