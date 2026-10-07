@@ -153,7 +153,7 @@ nav .nb{display:flex;flex-direction:column;align-items:center;gap:1px;font-style
 /* 対戦中のメニュー */
 body.duelon nav{position:fixed;left:0;right:0;bottom:0;z-index:60;margin:0}
 body.duelon #duel{bottom:var(--navh,60px)!important}
-@media (orientation:portrait){body.duelon #duel{width:calc(100vh - var(--navh,60px))!important;bottom:auto!important}body.duelon nav .nb{transform:rotate(90deg)}}
+@media (orientation:portrait){body.duelon #duel{width:calc(var(--vh,100dvh) - var(--navh,60px))!important;height:var(--vw,100vw)!important;left:var(--vw,100vw)!important;bottom:auto!important;padding:0 0 0 env(safe-area-inset-top,0px)!important}body.duelon nav .nb{transform:rotate(90deg)}}
 /* 横向き表示：メニューの幅に端の余白（ダイナミックアイランドなど）を足し、対戦画面は反対側の余白だけ空ける */body.duelland nav{top:0;bottom:0!important;left:auto;right:0;box-sizing:border-box;width:calc(64px + env(safe-area-inset-right,0px));flex-direction:column;justify-content:space-around;border-top:0;border-left:1px solid var(--line);padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) 0!important}body.duelland nav button{flex:0 0 auto;width:100%}
 body.duelland #duel{bottom:0!important;right:var(--navh,68px)!important;padding:0 0 0 env(safe-area-inset-left,0px)!important}
 body.duelland.navleft nav{right:auto;left:0;width:calc(64px + env(safe-area-inset-left,0px));border-left:0;border-right:1px solid var(--line);padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)!important}
@@ -1259,6 +1259,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.15.7","2026年10月7日",["縦持ちで対戦するとき、下のメニューにボタンが重なっていたのを直しました","「対戦」の印を、片方の剣が手前に重なる形にしました"]],
  ["2.15.6","2026年10月7日",["iPhoneを横向きにしたとき、対戦画面とメニューの配置が崩れていたのを直しました"]],
  ["2.15.5","2026年10月7日",["メニューの「対戦」の印を、左右対称の剣2本にしました","対戦中も下のメニューを表示するようにしました（画面を回して使うときもスマホ本体の下側に出し、印だけ回します）"]],
  ["2.15.4","2026年10月6日",["設定画面を、見出しごとにまとめた見やすい形にしました（長い説明は「?」の中へ）"]],
@@ -1568,7 +1569,7 @@ function place(){if(R.hidden)return;const nv=document.querySelector("nav"),land=
   document.body.classList.toggle("duelland",land);
   // 横向き表示：本体の下がどちら側かは画面の回転角で分かる（90＝右、270＝左）
   const ang=(screen.orientation&&screen.orientation.angle)??(window.orientation===-90?270:90);document.body.classList.toggle("navleft",land&&(ang===270||ang===-90));
-  requestAnimationFrame(()=>{document.documentElement.style.setProperty("--navh",(land?nv.offsetWidth:nv.offsetHeight)+"px")})}
+  requestAnimationFrame(()=>{const r=document.documentElement.style;r.setProperty("--navh",(land?nv.offsetWidth:nv.offsetHeight)+"px");r.setProperty("--vh",innerHeight+"px");r.setProperty("--vw",innerWidth+"px")})}
 function show(){R.hidden=false;document.body.classList.add("duelon");prevSel=[...document.querySelectorAll("nav button")].find(b=>b.getAttribute("aria-selected")==="true");
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.id==="duelBtn"));place();draw();wake();if(!D.started)setup(true)}
 function hide(){R.hidden=true;document.body.classList.remove("duelon","duelland","navleft");document.getElementById("duelBtn").setAttribute("aria-selected",false);if(prevSel)prevSel.setAttribute("aria-selected",true);try{lock&&lock.release()}catch(e){}lock=null}
@@ -1578,7 +1579,7 @@ const nb=document.createElement("button");nb.type="button";nb.textContent="対�
 nv.querySelectorAll("button[data-tab]").forEach(b=>b.addEventListener("click",()=>{if(!R.hidden){prevSel=null;hide()}}));
 window.openDuel=show;
 // 下のメニュー：印（アイコン）と短い名前
-(()=>{const I={decks:'<rect x="6" y="3" width="12" height="16" rx="2"/><path d="M9 21h9a2 2 0 0 0 2-2V7"/>',short:'<circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M3 4h2l2.4 11h10.2L20 8H6.2"/>',owned:'<path d="M4 8h16v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M3 4h18v4H3zM10 12h4"/>',duel:'<path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2"/><path d="M9.5 17.5L21 6V3h-3L6.5 14.5M11 19l-6-6M8 16l-4 4M5 21l-2-2"/>',opt:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'};
+(()=>{const I={decks:'<rect x="6" y="3" width="12" height="16" rx="2"/><path d="M9 21h9a2 2 0 0 0 2-2V7"/>',short:'<circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M3 4h2l2.4 11h10.2L20 8H6.2"/>',owned:'<path d="M4 8h16v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M3 4h18v4H3zM10 12h4"/>',duel:'<defs><mask id="swmask" maskUnits="userSpaceOnUse"><rect width="24" height="24" fill="#fff"/><path d="M8 16L19.5 4.5" stroke="#000" stroke-width="5.4"/></mask></defs><path mask="url(#swmask)" d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2"/><path d="M9.5 17.5L21 6V3h-3L6.5 14.5M11 19l-6-6M8 16l-4 4M5 21l-2-2"/>',opt:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'};
   const L={decks:"デッキ",short:"不足",owned:"所持",duel:"対戦",opt:"設定"};
   document.querySelectorAll("nav button").forEach(b=>{const k=b.dataset.tab||"duel";b.innerHTML=`<i class="nb"><svg viewBox="0 0 24 24" aria-hidden="true">${I[k]}</svg><span>${L[k]}</span></i>`})})();
 
