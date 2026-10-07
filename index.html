@@ -154,9 +154,9 @@ nav .nb{display:flex;flex-direction:column;align-items:center;gap:1px;font-style
 body.duelon nav{position:fixed;left:0;right:0;bottom:0;z-index:60;margin:0}
 body.duelon #duel{bottom:var(--navh,60px)!important}
 @media (orientation:portrait){body.duelon #duel{width:calc(var(--vh,100dvh) - var(--navh,60px))!important;height:var(--vw,100vw)!important;left:var(--vw,100vw)!important;bottom:auto!important;padding:0 0 0 env(safe-area-inset-top,0px)!important}body.duelon nav .nb{transform:rotate(90deg)}body.duelon nav{flex-direction:row-reverse}}
-/* 横向き表示：メニューの幅に端の余白（ダイナミックアイランドなど）を足し、対戦画面は反対側の余白だけ空ける */body.duelland nav{top:0;bottom:0!important;left:auto;right:0;box-sizing:border-box;width:calc(54px + env(safe-area-inset-right,0px)*.75);flex-direction:column;justify-content:stretch;border-top:0;border-left:1px solid var(--line);padding:4px calc(env(safe-area-inset-right,0px)*.75) 4px 0!important}body.duelland nav button{flex:1 1 0!important;width:100%;min-height:0;justify-content:center}
+/* 横向き表示：メニューの幅に端の余白（ダイナミックアイランドなど）を足し、対戦画面は反対側の余白だけ空ける */body.duelland nav{top:0;bottom:0!important;left:auto;right:0;box-sizing:border-box;width:calc(55px + min(env(safe-area-inset-right,0px),34px));flex-direction:column;justify-content:stretch;border-top:0;border-left:1px solid var(--line);padding:4px calc(2px + min(env(safe-area-inset-right,0px),34px)) 4px 2px!important}body.duelland nav button{flex:1 1 0!important;width:100%;min-height:0;justify-content:center}
 body.duelland #duel{bottom:0!important;right:var(--navh,68px)!important;padding:0 0 0 env(safe-area-inset-left,0px)!important}
-body.duelland.navleft nav{right:auto;left:0;width:calc(54px + env(safe-area-inset-left,0px)*.75);border-left:0;border-right:1px solid var(--line);padding:4px 0 4px calc(env(safe-area-inset-left,0px)*.75)!important}
+body.duelland.navleft nav{right:auto;left:0;width:calc(55px + min(env(safe-area-inset-left,0px),34px));border-left:0;border-right:1px solid var(--line);padding:4px 2px 4px calc(2px + min(env(safe-area-inset-left,0px),34px))!important}
 body.duelland.navleft #duel{right:0!important;left:var(--navh,68px)!important;padding:0 env(safe-area-inset-right,0px) 0 0!important}
 
 .opth{font-size:12px;font-weight:700;color:var(--muted);margin:6px 4px -4px;display:flex;align-items:center;gap:6px;flex:none}
@@ -1259,6 +1259,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.15.10","2026年10月7日",["対戦中のメニューの厚みと印の横の余白を、縦持ちと横持ちで同じにしました"]],
  ["2.15.9","2026年10月7日",["横持ちの対戦中、メニューの印の横に空いていた余白を詰めました"]],
  ["2.15.8","2026年10月7日",["対戦中のメニューの印の並ぶ位置を、縦持ちと横持ちでそろえました"]],
  ["2.15.7","2026年10月7日",["縦持ちで対戦するとき、下のメニューにボタンが重なっていたのを直しました","「対戦」の印を、片方の剣が手前に重なる形にしました"]],
