@@ -20,7 +20,7 @@ jobs:
               print(f"為替 1USD={usd:.2f}円 1EUR={eur:.2f}円 （{fx.get('time_last_update_utc')}）")
           except Exception as e:
               usd, eur = 150.0, 165.0; print("為替取得失敗、仮の値を使用", e)
-          ids = {"灰流うらら": 14558127, "ドレミコード・ハルモニア": 29650040}
+          ids = {"灰流うらら": 14558127, "調和ノ天救竜（フィドラウリス＝ハルモニア）": 70088809, "ドレミコード・ハルモニア": 29650040}
           extra = __import__("os").environ.get("EXTRA", "")
           for k, v in ids.items():
               time.sleep(1)
