@@ -1175,7 +1175,7 @@ function detailRow(ul,l,listId,k,c,buttons,opt={}){const nm=l.querySelector(".na
   const ct=document.createElement("div");ct.className="ctext";ct.style.flexBasis="100%";box.append(ct);
   // 相場：遊戯王相場（yugiohsouba.com）のカードページはカード名から作れないので、サイト内を Google で検索して開く
   if(!c.manual){const a=document.createElement("a");a.className="btn ghost";a.textContent="相場";a.target="_blank";a.rel="noopener";
-    a.href="https://www.google.com/search?q="+encodeURIComponent(`site:yugiohsouba.com ${c.name.normalize("NFKC")} ${soubaRar(c.rar)}`);box.append(a)}
+    a.href="https://www.google.com/search?q="+encodeURIComponent(`${c.name.normalize("NFKC")} 値段`); // カード名と「値段」だけで検索（サイトやレア度で絞ると外れることがあるため）box.append(a)}
   {const pb=document.createElement("button");pb.type="button";pb.className="btn ghost sm";pb.textContent="値段メモ";pb.onclick=()=>openPrice(c.name);box.append(pb);
     const ps=priceSum(c.name);if(ps){const d=document.createElement("div");d.className="dinfo psum";d.textContent=ps;box.prepend(d)}}
   if(opt.label&&buttons.length){const lb=document.createElement("span");lb.className="dlabel";lb.textContent=opt.label;box.append(lb)}
@@ -1259,6 +1259,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.15.11","2026年10月8日",["「相場」ボタンの検索を、「カード名 値段」だけで探す形にしました"]],
  ["2.15.10","2026年10月7日",["対戦中のメニューの厚みと印の横の余白を、縦持ちと横持ちで同じにしました"]],
  ["2.15.9","2026年10月7日",["横持ちの対戦中、メニューの印の横に空いていた余白を詰めました"]],
  ["2.15.8","2026年10月7日",["対戦中のメニューの印の並ぶ位置を、縦持ちと横持ちでそろえました"]],
