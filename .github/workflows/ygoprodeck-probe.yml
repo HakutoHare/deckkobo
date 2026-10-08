@@ -1,0 +1,37 @@
+# 海外の値段（YGOPRODeck の公開API）を日本円で見る確認用（一時的）
+name: ygoprodeck-probe
+on:
+  push:
+    paths: [".github/workflows/ygoprodeck-probe.yml"]
+permissions: {contents: read}
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: probe
+        shell: python
+        run: |
+          import urllib.request, json, time
+          UA = {"User-Agent": "deckkobo (github.com/HakutoHare/deckkobo)"}
+          def get(u):
+              return json.load(urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=30))
+          try:
+              fx = get("https://open.er-api.com/v6/latest/USD"); usd = fx["rates"]["JPY"]; eur = usd / fx["rates"]["EUR"]
+              print(f"為替 1USD={usd:.2f}円 1EUR={eur:.2f}円 （{fx.get('time_last_update_utc')}）")
+          except Exception as e:
+              usd, eur = 150.0, 165.0; print("為替取得失敗、仮の値を使用", e)
+          ids = {"灰流うらら": 14558127, "ドレミコード・ハルモニア": 29650040}
+          extra = __import__("os").environ.get("EXTRA", "")
+          for k, v in ids.items():
+              time.sleep(1)
+              try:
+                  d = get(f"https://db.ygoprodeck.com/api/v7/cardinfo.php?id={v}")["data"][0]
+              except Exception as e:
+                  print("■", k, v, "取得できず", e); continue
+              p = d.get("card_prices", [{}])[0]
+              print("■", k, "／英語名:", d["name"])
+              for site, cur in [("cardmarket_price", "EUR"), ("tcgplayer_price", "USD"), ("ebay_price", "USD"), ("amazon_price", "USD"), ("coolstuffinc_price", "USD")]:
+                  x = float(p.get(site, 0) or 0); jpy = x * (eur if cur == "EUR" else usd)
+                  print(f"  {site:20s} {x:8.2f} {cur} → 約 {jpy:,.0f} 円")
+              for s in d.get("card_sets", [])[:6]:
+                  print("   収録:", s.get("set_code"), s.get("set_rarity"), s.get("set_price"), "USD")
