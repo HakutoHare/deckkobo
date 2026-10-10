@@ -19,9 +19,9 @@ jobs:
               pg = "《" + n.replace("\uff0d", "\u2212") + "》"
               u = "https://yugioh-wiki.net/index.php?cmd=source&page=" + urllib.parse.quote(pg.encode("euc-jp", "replace"))
               try:
-                  b = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": UA}), timeout=30).read().decode("euc-jp", "replace")
+                  b = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": UA}), timeout=30).read().decode("utf-8", "replace")
               except Exception as e:
                   b = "ERR " + str(e)
               i = b.find("<pre"); j = b.find("</pre>")
               src = b[i:j] if i >= 0 else b[:300]
-              print("#####", n); print(src[:2500])
+              print("#####", n); print("\n".join(src.split("\n")[:22])[:2500])
