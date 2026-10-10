@@ -218,13 +218,7 @@ body.duelland.navleft #duel{right:0!important;left:var(--navh,68px)!important;pa
         <input type="text" id="renameInput" placeholder="デッキ名">
         <button class="btn" id="renameOk">保存</button>
       </div>
-      <div class="row" id="delRow" hidden style="flex-wrap:nowrap;justify-content:space-between">
-        <span style="font-size:14px">このデッキを削除しますか？</span>
-        <span class="row" style="flex:none;flex-wrap:nowrap;gap:6px">
-          <button class="btn ghost sm" id="delCancel">やめる</button>
-          <button class="btn del sm" id="delOk">削除する</button>
-        </span>
-      </div>
+
     </div>
     <div class="seg" id="zoneTabs" role="tablist"></div>
     <div class="panel">
@@ -344,6 +338,16 @@ body.duelland.navleft #duel{right:0!important;left:var(--navh,68px)!important;pa
         <input type="file" id="pdfFile" accept="application/pdf,.pdf" hidden>
         <input type="file" id="imgFile" accept="image/*" hidden>
       </div>
+    </div>
+  </div>
+</div>
+<div class="modal" id="delRow" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="delTitle">
+    <h2 id="delTitle">デッキを削除しますか？</h2>
+    <div class="sub" id="delName" style="overflow-wrap:anywhere"></div>
+    <div class="row" style="flex-wrap:nowrap;justify-content:flex-end;gap:6px">
+      <button type="button" class="btn ghost sm" id="delCancel">やめる</button>
+      <button type="button" class="btn del sm" id="delOk">削除する</button>
     </div>
   </div>
 </div>
@@ -896,7 +900,8 @@ $("ownModalOk").onclick=()=>{if(!_add)return;let k=0;const sub=_ownMode==="sub";
   for(const i in _add){const n=_add[i];if(n<=0||!card(i))continue;const o=S.owned[i]||0;
     if(sub){const v=Math.max(0,o-n);k+=o-v;if(v)S.owned[i]=v;else delete S.owned[i]}else{S.owned[i]=o+n;k+=n}}
   closeOwnAdd();if(sub)gc();save(k?(sub?`所持から${k}枚削除しました`:`所持に${k}枚追加しました`):null);renderDecks()};
-$("delDeck").onclick=()=>{$("delRow").hidden=false};
+$("delDeck").onclick=()=>{$("delName").textContent=`「${deck()?.name||""}」を削除します。元に戻せません。`;$("delRow").hidden=false};
+$("delRow").addEventListener("click",e=>{if(e.target.id==="delRow")$("delRow").hidden=true});
 $("delCancel").onclick=()=>{$("delRow").hidden=true};
 $("delOk").onclick=()=>{const dn=deck()?.name;okMsg=`「${dn}」を削除しました`;S.decks=S.decks.filter(d=>d.id!==S.cur);S.cur=S.decks[0]?.id;$("delRow").hidden=true;view="list";gc();save();renderDecks()};
 
@@ -1274,6 +1279,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.15.17","2026年10月11日",["デッキを削除するときの確認を、画面中央の小さな窓で出すようにしました"]],
  ["2.15.16","2026年10月11日",["検索欄などの入力欄に、中身を全部消す×を付けました（何か入力されているときだけ右端に出ます）"]],
  ["2.15.15","2026年10月11日",["「遊☆戯☆王 ORIGINAL ARTWORK COLLECTION」の新しいカード26種を追加しました（通常モンスターの「カオス・ソルジャー」は「カオス・ソルジャー（通常モンスター）」として儀式版と別に入れています）"]],
  ["2.15.14","2026年10月10日",["レア度に「オリジナルアートワークコレクション」（印は OAC）を追加しました"]],
