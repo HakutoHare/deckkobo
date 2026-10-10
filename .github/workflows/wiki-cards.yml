@@ -1,0 +1,27 @@
+# 遊戯王カードWiki から指定カードを読み込む（一時的）
+name: wiki-cards
+on:
+  push:
+    paths: [".github/workflows/wiki-cards.yml"]
+permissions: {contents: read}
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: fetch
+        shell: python
+        run: |
+          import urllib.request, urllib.parse, time, json
+          UA = "Mozilla/5.0 (deckkobo; github.com/HakutoHare/deckkobo)"
+          names = json.loads('["業火の魔神エクゾディア", "完全なる羽化－究極完全態・グレート・モス", "ハーピィ・レディ－華麗なる分身－", "神を超えたしもべ－青眼の究極竜", "機械龍－リボルバー・ドラゴン", "幻想の邪眼－サクリファイス", "死の世界の支配者－ダーク・ネクロフィア", "稲妻の戦士－ギルフォード・ザ・ライトニング", "波動の超魔導剣士－ブラック・パラディン", "沈黙の闘者－サイレント・マジシャン", "罰ゲーム「ＧＲＥＥＤ－欲望の幻像－」", "ゾンバイア", "魔の龍札－土龍", "魔の龍札－金龍", "スーパークリティカル", "環境適応力", "香水戦術", "闇魔導の覇王", "属性反発作用", "デューカー・ツイン・ソード", "閃光の封殺剣", "暗黒魔族ギルファー・デーモン－暗黒魔炎葬", "鋼鉄の騎士 ギア・フリード", "マジックカード「エネミーコントローラー」", "魂への引導", "カオス・ソルジャー"]')
+          for n in names:
+              time.sleep(4)
+              pg = "《" + n.replace("\uff0d", "\u2212") + "》"
+              u = "https://yugioh-wiki.net/index.php?cmd=source&page=" + urllib.parse.quote(pg.encode("euc-jp", "replace"))
+              try:
+                  b = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": UA}), timeout=30).read().decode("euc-jp", "replace")
+              except Exception as e:
+                  b = "ERR " + str(e)
+              i = b.find("<pre"); j = b.find("</pre>")
+              src = b[i:j] if i >= 0 else b[:300]
+              print("#####", n); print(src[:2500])
