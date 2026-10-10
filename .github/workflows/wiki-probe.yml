@@ -32,12 +32,14 @@ jobs:
               t = html.unescape(re.sub(r"<[^>]+>", "", m.group(2))).strip()
               if t and len(t) < 40: print("LINK:", t, "|", html.unescape(m.group(1))[:120])
           def page(name):
-              time.sleep(3); u = "https://yugioh-wiki.net/index.php?" + urllib.parse.quote(name.encode("euc-jp"))
+              time.sleep(3); u = "https://yugioh-wiki.net/index.php?" + urllib.parse.quote(name.encode("euc-jp","replace"))
               st, p = get(u); ls = txt(p); print("=" * 70); print("PAGE:", name, st, "lines", len(ls)); return ls
           KEY = r"自動|ロボット|クロール|クローラ|スクレイピング|収集|機械的|プログラム|転載|複製|二次利用|無断|著作|ライセンス|GFDL|クリエイティブ|CC BY|禁止|負荷|アクセス"
-          for n in ["遊戯王カードWikiについて", "このWikiについて", "著作権について", "FAQ", "ルール", "編集ガイドライン", "当Wikiについて"]:
+          for n in ["はじめにお読み下さい"]:
               ls = page(n); k = 0
               for x in ls:
                   if re.search(KEY, x) and k < 25: print("  >", x[:300]); k += 1
-          for n in ["《沈黙の闘者》", "《沈黙の闘者－サイレント・マジシャン》", "ORIGINAL ARTWORK COLLECTION", "オリジナルアートワークコレクション"]:
+          for n in ["《沈黙の闘者》", "ORIGINAL ARTWORK COLLECTION", "オリジナルアートワークコレクション"]:
               ls = page(n); print("\n".join("  : " + x[:200] for x in ls[:60]))
+          ls = page("RecentChanges"); print("\n".join("  : " + x[:120] for x in ls[:80]))
+          ls = page("はじめにお読み下さい"); print("\n".join("  # " + x[:300] for x in ls[:200]))
