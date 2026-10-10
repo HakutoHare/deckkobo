@@ -897,10 +897,18 @@ $("delCancel").onclick=()=>{$("delRow").hidden=true};
 $("delOk").onclick=()=>{const dn=deck()?.name;okMsg=`「${dn}」を削除しました`;S.decks=S.decks.filter(d=>d.id!==S.cur);S.cur=S.decks[0]?.id;$("delRow").hidden=true;view="list";gc();save();renderDecks()};
 
 const setDbCount=t=>document.querySelectorAll(".dbCount").forEach(e=>e.textContent=t);
-fetch("extsub.json").then(r=>r.json()).then(j=>{EXS=j;render()}).catch(()=>{});
+fetch("extsub.json").then(r=>r.json()).then(j=>{EXS=j;applyExtra();render()}).catch(()=>{});
+/* 正式データ（mycard）にまだ無い新しいカード（extra.json）。同じ名前が正式データにあればそちらを使う */
+var EXTRA=null;
+function applyExtra(){if(!EXTRA)return;const c=EXTRA.cards||{};
+  if(DB.length&&!DB._ex){const have=new Set(DB.map(d=>d.n));for(const n in c)if(!have.has(n)){const r=c[n].r;if(r)YOMI.set(n,r);DB.push({n,t:c[n].t,k:norm(n)+"|"+norm(r||"")})}DB._ex=1;setDbCount(DB.length.toLocaleString()+"種から検索");$("dataVer").textContent=`${DATA_DATE}・${DB.length.toLocaleString()}種`}
+  if(TEXT)for(const n in c)if(!TEXT[n]){TEXT[n]=[c[n].h,c[n].x];TEXTN=null}
+  if(ATTRD)for(const n in c)if(!ATTRD.cards[n]){const a=c[n].a;ATTRD.cards[n]=[a[0],a[1],a[2],a[3],a[4].map(t=>{let i=ATTRD.themes.indexOf(t);if(i<0)i=ATTRD.themes.push(t)-1;return i})]}
+  for(const n in c)if(c[n].e&&!EXS[n])EXS[n]=c[n].e}
+fetch("extra.json").then(r=>r.json()).then(j=>{EXTRA=j;applyExtra();render()}).catch(()=>{});
 fetch("genre.json").then(r=>r.json()).then(j=>{GENRE=j||{};render()}).catch(()=>{});
 fetch("limit.json").then(r=>r.json()).then(j=>{LIMIT=j.cards||{};LIMIT_NAME=j.list||"";$("limVer").textContent=LIMIT_NAME?`${LIMIT_NAME.replace(".","年")}月（OCG）`:"—";render()}).catch(()=>{});
-fetch("cardlist.json").then(r=>r.json()).then(l=>{DB=l.map(([n,t,r])=>{if(r)YOMI.set(n,r);return {n,t,k:norm(n)+"|"+norm(r||"")}});setDbCount(DB.length.toLocaleString()+"種から検索");$("dataVer").textContent=`${DATA_DATE}・${DB.length.toLocaleString()}種`;render()})
+fetch("cardlist.json").then(r=>r.json()).then(l=>{DB=l.map(([n,t,r])=>{if(r)YOMI.set(n,r);return {n,t,k:norm(n)+"|"+norm(r||"")}});applyExtra();setDbCount(DB.length.toLocaleString()+"種から検索");$("dataVer").textContent=`${DATA_DATE}・${DB.length.toLocaleString()}種`;render()})
   .catch(()=>{setDbCount("");toast("カード一覧を読み込めませんでした","ページを開き直してください。手入力での追加は使えます。")});
 
 try{const l=localStorage.getItem("deckkobo");if(l)S=JSON.parse(l)}catch(e){}
@@ -1186,7 +1194,7 @@ function detailRow(ul,l,listId,k,c,buttons,opt={}){const nm=l.querySelector(".na
   nm.onclick=tg;nm.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();tg()}};
   return [l,box]}
 // カードの効果文（cardtext.json、約7MB・通信は圧縮で約1MB）。初めて見るときに取得し、以後は端末に保存したものを使う
-function loadText(){return _textP||(_textP=fetch("cardtext.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>TEXT=j).catch(e=>{_textP=null;throw e}))}
+function loadText(){return _textP||(_textP=fetch("cardtext.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>{TEXT=j;applyExtra()}).catch(e=>{_textP=null;throw e}))}
 // el に効果を出す。読み込みを待つ間に別のカードの表示へ変わっていたら（ok() が false）書き込まない
 function showText(el,c,ok=()=>true){el.hidden=false;
   if(c.manual){el.textContent="手入力のカードなので、効果の情報はありません。";return}
@@ -1259,6 +1267,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.15.15","2026年10月11日",["「遊☆戯☆王 ORIGINAL ARTWORK COLLECTION」の新しいカード25種を追加しました"]],
  ["2.15.14","2026年10月10日",["レア度に「オリジナルアートワークコレクション」（印は OAC）を追加しました"]],
  ["2.15.13","2026年10月8日",["「相場」ボタンの検索を「カード名 価格」にしました"]],
  ["2.15.12","2026年10月8日",["「相場」ボタンの検索を、「カード名 値段」だけで探す形にしました"]],
@@ -1357,7 +1366,7 @@ $("priceModal").onclick=e=>{if(e.target===$("priceModal"))$("priceModal").hidden
 $("logClose").onclick=()=>{$("logModal").hidden=true};
 $("logModal").onclick=e=>{if(e.target===$("logModal"))$("logModal").hidden=true};
 // 絞り込み（属性・種族・レベル・種類・テーマ・ジャンル）。データは cardattr.json（初めて絞り込むときに取得）と genre.json
-function loadAttr(){return _attrP||(_attrP=fetch("cardattr.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>{ATTRD=j}).catch(e=>{_attrP=null;throw e}))}
+function loadAttr(){return _attrP||(_attrP=fetch("cardattr.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>{ATTRD=j;applyExtra()}).catch(e=>{_attrP=null;throw e}))}
 function fltOn(k){const f=k&&FLT[k];return !!f&&Object.values(f).some(v=>v!=="")}
 let TEXTN=null;// 効果文の検索用（表記ゆれをならしたもの）
 function fltPred(k){if(!fltOn(k)||!ATTRD)return null;const f=FLT[k],th=norm(f.theme||"");
