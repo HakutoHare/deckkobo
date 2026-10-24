@@ -636,9 +636,8 @@ function renderDecks(){
     if(!ids.length)zl.innerHTML='<li class="empty">まだカードがありません。上の検索から追加してください。</li>';
     grouped(zl,ids.map(item),c=>d[zk][c.id],c=>{const i=c.id;const k=kid(i),qw=document.createElement("span");qw.style.cssText="flex:none;display:flex;align-items:center;gap:4px";
     const slot=dv=>{if(dv>0&&deckCnt(d,k)>=capOf(d)){toast(capMsg(d),"レア度が違っても同じカードとして数えます。");return}const v=d[zk][i]+dv;if(v<=0){delete d[zk][i];gc()}else d[zk][i]=v;clampPut(d);if(dv>0)autoPut(d,k);save();renderDecks()};
-    const sb=(t,dv,lab)=>{const b=document.createElement("button");b.type="button";b.className="slotb";b.textContent=t;b.setAttribute("aria-label",lab+"："+c.name);b.onclick=e=>{e.stopPropagation();slot(dv)};return b};
-    qw.append(sb("枠−",-1,"候補の枠を1つ減らす"),sb("枠＋",1,"候補の枠を1つ増やす"),putQty(d,k));
-    return detailRow(zl,limRow(d,c,li(c,qw)),"deck:"+zk,i,c,[["レア度",()=>openDeckRar(zk,kid(i))]])});}
+    qw.append(putQty(d,k));
+    return detailRow(zl,limRow(d,c,li(c,qw)),"deck:"+zk,i,c,[["枠＋",()=>slot(1)],["枠−",()=>slot(-1)],["レア度",()=>openDeckRar(zk,kid(i))]])});}
   // 不足は「不足カード」タブと同じ全体の計算（集計中のデッキ＋このデッキ、設定の数え方に合わせる）で出し、このデッキで使うカードだけを並べる
   const mine=new Set(Object.keys(deckNeed(d)).map(kid));
   const sl=$("shortList");sl.innerHTML="";let tot=0;
@@ -1314,6 +1313,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.16.2","2026年10月24日",["押し間違いを防ぐため、「枠＋」「枠−」をカード名を押して開く部分に移しました"]],
  ["2.16.1","2026年10月24日",["デッキの作り方を変えました：デッキに入れるのは「候補の枠」で、空いている所持カードがあれば自動で入ります","デッキ内の−／＋は所持カードの出し入れになり、真ん中に「入れた枚数/枠」を表示します。枠の数は「枠−」「枠＋」で変えられます"]],
  ["2.16.0","2026年10月24日",["持っているカードとデッキの自動比較（不足カード）を休止し、画面から外しました","デッキの各カードに「所持 入れた枚数/使う枚数」を付けました。押すと所持カードから1枚ずつ入れられます（所持の枚数は全デッキで分け合います）","デッキの「…」に「所持カードをまとめて入れる」「所持から入れたカードを全部外す」を追加しました","デッキ一覧に、所持から入れた枚数を表示するようにしました"]],
  ["2.15.17","2026年10月11日",["デッキを削除するときの確認を、画面中央の小さな窓で出すようにしました"]],
