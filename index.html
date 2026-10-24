@@ -121,7 +121,7 @@ input[type=search][placeholder],input[type=text][placeholder]{padding-right:30px
 input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;display:none}
 input[type=search][placeholder]:not(:placeholder-shown),input[type=text][placeholder]:not(:placeholder-shown){background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='9' fill='%23999'/%3E%3Cpath d='M6.5 6.5l7 7M13.5 6.5l-7 7' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;background-size:16px 16px}
 /* 不足カードの自動比較は休止中（html に noshort）。中身は残してあるので、noshort を外せば戻る */
-.noshort #shortTab,.noshort #incChip,.noshort #deckListView .colhead span:last-child,.noshort #deckList .switch,.noshort #deckList .swlab,.noshort .shortui{display:none!important}
+.noshort #shortTab,.noshort #incChip,.noshort .shortui{display:none!important}
 /* デッキの各カードの「所持から入れた枚数」 */
 .putb{flex:none;font:inherit;font-size:11px;font-weight:700;font-family:var(--f-num);border:1px solid var(--line);border-radius:99px;padding:2px 7px;margin-right:6px;background:var(--bg);color:var(--muted);cursor:pointer;white-space:nowrap}
 .putb.full{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
@@ -729,7 +729,7 @@ function renderDeckList(){
     if(OPEN.div===x){const box=document.createElement("li");box.className="divset";
       box.innerHTML=`<label>グループの名前<input type="text" value="${esc(v.name||"")}" maxlength="30" placeholder="グループ"></label>
         <div class="dlabel" style="align-self:flex-start">色</div><div class="divcols">${Object.entries(DIVCOL).map(([k,c])=>`<button type="button" data-c="${k}" aria-label="${DIVNAME[k]}" aria-pressed="${(v.color||"")===k}" style="--dc:${c||"var(--accent)"}"></button>`).join("")}</div>
-        ${v.hideInc||!mine.length?"":'<div class="row shortui" style="gap:6px"><span class="dlabel" style="flex:1">グループのデッキの集計</span><button type="button" class="btn ghost sm" data-a="incall">全部入れる</button><button type="button" class="btn ghost sm" data-a="incnone">全部外す</button></div>'}
+        ${v.hideInc||!mine.length?"":'<div class="row" style="gap:6px"><span class="dlabel" style="flex:1">グループのデッキの集計</span><button type="button" class="btn ghost sm" data-a="incall">全部入れる</button><button type="button" class="btn ghost sm" data-a="incnone">全部外す</button></div>'}
         <div class="row" style="justify-content:flex-end;gap:6px"><button type="button" class="btn del sm" data-a="del">グループを削除</button><button type="button" class="btn sm" data-a="ok">閉じる</button></div>`;
       const [ti]=box.querySelectorAll("input");ti.onchange=()=>{v.name=ti.value.trim();save();renderDeckList()};
       box.querySelectorAll(".divcols button").forEach(b=>b.onclick=()=>{v.color=b.dataset.c;v.name=ti.value.trim();save();renderDeckList()});
@@ -798,7 +798,7 @@ function shortRows(decks,only){const need={},uses={},lists={};
   return out}
 const _buy={};
 /* デッキの枠で所持カードが入っていない分を、カードごとにまとめる。{k:カードid, need:枠の合計, lack:空き, own:所持, uses:{デッキid:空き}} */
-function putShortRows(){const R={};S.decks.forEach(d=>{clampPut(d);new Set(["main","extra","side"].flatMap(z=>Object.keys(d[z]).map(kid))).forEach(k=>{if(!card(k))return;const n=deckCnt(d,k),l=n-putOf(d,k);const r=R[k]=R[k]||{k,need:0,lack:0,own:ownTot(k),uses:{}};r.need+=n;if(l>0){r.lack+=l;r.uses[d.id]=l}})});/* 空いている所持カードで埋められる分は不足に数えない（「まとめて入れる」などで入れられるため） */
+function putShortRows(){const R={};S.decks.filter(incOn).forEach(d=>{clampPut(d);new Set(["main","extra","side"].flatMap(z=>Object.keys(d[z]).map(kid))).forEach(k=>{if(!card(k))return;const n=deckCnt(d,k),l=n-putOf(d,k);const r=R[k]=R[k]||{k,need:0,lack:0,own:ownTot(k),uses:{}};r.need+=n;if(l>0){r.lack+=l;r.uses[d.id]=l}})});/* 空いている所持カードで埋められる分は不足に数えない（「まとめて入れる」などで入れられるため） */
   return Object.values(R).map(r=>{const used=S.decks.reduce((t,d)=>t+putOf(d,r.k),0);r.lack=Math.max(0,r.lack-Math.max(0,r.own-used));return r}).filter(r=>r.lack>0)}
 /* 所持に増やした分を、空いている枠へ上から順に入れる */
 function fillPut(id,v){const k=kid(id);for(const d of S.decks){while(v>0&&putOf(d,k)<deckCnt(d,k)&&ownTot(k)-putElse(d,k)>putOf(d,k)){setPut(d,k,putOf(d,k)+1);v--}if(!v)break}}
@@ -819,7 +819,7 @@ function renderShort(){
   // 集計するデッキは「集計：○デッキ ▸」にしまい、押すとシートで選ぶ
   $("incChip").textContent=`集計：${S.decks.filter(incOn).length}／${S.decks.filter(d=>!incHide(d)).length}デッキ ▸`;
   const ul=$("totShortList");ul.innerHTML="";let tot=0;
-  /* 不足＝デッキの候補の枠のうち、所持カードが入っていない分（全デッキ） */
+  /* 不足＝デッキの候補の枠のうち、所持カードが入っていない分（デッキ一覧の「集計」がオンのデッキ） */
   const rows=putShortRows().map(r=>[r.k,r.need,r.lack,r.own,r.uses]);
   let yenSum=0,yenN=0;
   const byKey=Object.fromEntries(rows.map(r=>[r[0],r]));
@@ -1319,6 +1319,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.16.5","2026年10月24日",["デッキ一覧の「集計」スイッチを戻しました。オフにしたデッキ・グループのカードは不足カードに出ません"]],
  ["2.16.4","2026年10月24日",["「不足カード」を戻しました。デッキの候補の枠のうち、所持カードが入っていない分を出します","不足カードの「所持に＋1」などで所持を増やすと、空いている枠にそのまま入ります"]],
  ["2.16.3","2026年10月24日",["デッキのカード名を押して開く部分に「所持に1枚追加」を付けました（枠に空きがあれば、そのままデッキにも入ります）"]],
  ["2.16.2","2026年10月24日",["押し間違いを防ぐため、「枠＋」「枠−」をカード名を押して開く部分に移しました"]],
