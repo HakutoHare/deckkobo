@@ -140,6 +140,7 @@ input[type=search][placeholder]:not(:placeholder-shown),input[type=text][placeho
 .dgrp .gl{display:flex;align-items:center;padding:0 5px;font-size:10.5px;font-weight:700;color:var(--muted);background:var(--panel);white-space:nowrap;font-family:var(--f-num)}
 .dgrp>button,.dgrp>a{font:inherit;font-size:12px;font-weight:700;color:var(--accent);background:none;border:0;border-left:1px solid var(--line);padding:5px 6px;min-width:26px;text-align:center;text-decoration:none;cursor:pointer;white-space:nowrap}
 .dgrp>button:first-child,.dgrp>a:first-child{border-left:0}
+.dgrp .gl.mid{border-left:1px solid var(--line);min-width:2.8em;justify-content:center}
 .dgrp>button:active,.dgrp>a:active{background:color-mix(in srgb,var(--accent) 12%,transparent)}
 </style>
 <style>html{box-sizing:border-box;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);color-scheme:light}body{margin:0;font-size:14px;-webkit-text-size-adjust:100%}*,*::before,*::after{box-sizing:inherit}[hidden]{display:none!important}</style>
@@ -371,6 +372,16 @@ body.duelland.navleft #duel{right:0!important;left:var(--navh,68px)!important;pa
     <div class="row" style="flex-wrap:nowrap;justify-content:flex-end;gap:6px">
       <button type="button" class="btn ghost sm" id="delCancel">やめる</button>
       <button type="button" class="btn del sm" id="delOk">削除する</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="slotDel" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="slotDelTitle">
+    <h2 id="slotDelTitle">枠を削除しますか？</h2>
+    <div class="sub" id="slotDelName" style="overflow-wrap:anywhere"></div>
+    <div class="row" style="flex-wrap:nowrap;justify-content:flex-end;gap:6px">
+      <button type="button" class="btn ghost sm" id="slotDelNo">いいえ</button>
+      <button type="button" class="btn del sm" id="slotDelYes">はい（削除する）</button>
     </div>
   </div>
 </div>
@@ -646,7 +657,7 @@ function renderDecks(){
   if(curZone!=="short"){const zk=curZone;const ids=sortIds(Object.keys(d[zk]).filter(card));
     if(!ids.length)zl.innerHTML='<li class="empty">まだカードがありません。上の検索から追加してください。</li>';
     grouped(zl,ids.map(item),c=>d[zk][c.id],c=>{const i=c.id;const k=kid(i),qw=document.createElement("span");qw.style.cssText="flex:none;display:flex;align-items:center;gap:4px";
-    const slot=dv=>{if(dv>0&&deckCnt(d,k)>=capOf(d)){toast(capMsg(d),"レア度が違っても同じカードとして数えます。");return}const v=d[zk][i]+dv;if(v<=0){delete d[zk][i];gc()}else d[zk][i]=v;clampPut(d);if(dv>0)autoPut(d,k);save();renderDecks()};
+    const slot=dv=>{if(dv>0&&deckCnt(d,k)>=capOf(d)){toast(capMsg(d),"レア度が違っても同じカードとして数えます。");return}const v=d[zk][i]+dv;if(v<=0){askSlotDel(c.name,()=>{delete d[zk][i];gc();clampPut(d);save();renderDecks()});return}d[zk][i]=v;clampPut(d);if(dv>0)autoPut(d,k);save();renderDecks()};
     qw.append(putQty(d,k));
     return detailRow(zl,limRow(d,c,li(c,qw)),"deck:"+zk,i,c,[["−",()=>slot(-1),`枠 ${d[zk][i]}`],["＋",()=>slot(1),`枠 ${d[zk][i]}`],["＋1",()=>{S.owned[i]=(S.owned[i]||0)+1;autoPut(d,k);okMsg=`「${c.name}」を所持に追加しました（所持${ownTot(k)}枚）`;save();renderDecks()},`所持 ${ownTot(k)}`],["レア度",()=>openDeckRar(zk,kid(i)),"レア度"]])});}
   if(keepY)zl.scrollTop=keepY;
@@ -948,6 +959,12 @@ $("ownModalOk").onclick=()=>{if(!_add)return;let k=0;const sub=_ownMode==="sub";
   for(const i in _add){const n=_add[i];if(n<=0||!card(i))continue;const o=S.owned[i]||0;
     if(sub){const v=Math.max(0,o-n);k+=o-v;if(v)S.owned[i]=v;else delete S.owned[i]}else{S.owned[i]=o+n;k+=n}}
   closeOwnAdd();if(sub)gc();save(k?(sub?`所持から${k}枚削除しました`:`所持に${k}枚追加しました`):null);renderDecks()};
+/* 枠を0にするときの確認。いいえなら1枠のまま */
+let _slotDelFn=null;
+function askSlotDel(name,fn){_slotDelFn=fn;$("slotDelName").textContent=`「${name}」の枠が0になるため、デッキから削除します。`;$("slotDel").hidden=false}
+$("slotDelNo").onclick=()=>{_slotDelFn=null;$("slotDel").hidden=true};
+$("slotDelYes").onclick=()=>{const f=_slotDelFn;_slotDelFn=null;$("slotDel").hidden=true;if(f)f()};
+$("slotDel").addEventListener("click",e=>{if(e.target.id==="slotDel"){_slotDelFn=null;$("slotDel").hidden=true}});
 $("delDeck").onclick=()=>{$("delName").textContent=`「${deck()?.name||""}」を削除します。元に戻せません。`;$("delRow").hidden=false};
 $("delRow").addEventListener("click",e=>{if(e.target.id==="delRow")$("delRow").hidden=true});
 $("delCancel").onclick=()=>{$("delRow").hidden=true};
@@ -1246,7 +1263,8 @@ function detailRow(ul,l,listId,k,c,buttons,opt={}){const nm=l.querySelector(".na
   const bar=document.createElement("div");bar.className="dbar";const G={};
   const grp=g=>{if(G[g])return G[g];const w=document.createElement("span");w.className="dgrp";if(g){const t=document.createElement("span");t.className="gl";t.textContent=g;w.append(t)}G[g]=w;return w};
   const ordered=[];buttons.forEach(([label,fn,g])=>{g=g||"";if(!G[g])ordered.push(g);const w=grp(g);const b=document.createElement("button");b.type="button";b.textContent=label;b.onclick=fn;w.append(b)});
-  ordered.forEach(g=>{const w=G[g],bs=w.querySelectorAll("button");if(bs.length===1&&bs[0].textContent===g)w.querySelector(".gl").remove();bar.append(w)});
+  ordered.forEach(g=>{const w=G[g],bs=w.querySelectorAll("button");if(bs.length===1&&bs[0].textContent===g)w.querySelector(".gl").remove();
+    else if(bs.length===2&&bs[0].textContent==="−"&&bs[1].textContent==="＋"){const gl=w.querySelector(".gl");gl.classList.add("mid");bs[0].after(gl)}bar.append(w)});
   const pg=document.createElement("span");pg.className="dgrp"; /* 相場・値段メモは見出しなしで並べる（幅を取らないように） */
   if(!c.manual){const a=document.createElement("a");a.textContent="相場";a.target="_blank";a.rel="noopener";
     a.href="https://www.google.com/search?q="+encodeURIComponent(`${c.name.normalize("NFKC")} 価格`); /* カード名と「価格」だけで検索（サイトやレア度で絞ると外れることがあるため） */pg.append(a)}
@@ -1337,6 +1355,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.16.9","2026年10月25日",["枠のボタンを「−　枠 3　＋」の並びにしました","枠が0になるときは、デッキから削除してよいかを確認するようにしました（いいえなら1枠のまま）"]],
  ["2.16.8","2026年10月25日",["デッキの中で枠や所持の数を変えたとき、一覧の位置がずれないようにしました"]],
  ["2.16.7","2026年10月25日",["カードを開いたときのボタンを、「枠」「所持」「価格」「レア度」などのまとまりごとに横一列に並べるようにしました"]],
  ["2.16.6","2026年10月25日",["一覧のスクロールバーが右端の文字（「あと○枚」など）に重ならないようにしました"]],
