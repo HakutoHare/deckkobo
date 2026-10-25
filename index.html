@@ -638,7 +638,7 @@ function renderDecks(){
   const z=$("addZone").value;
   const zoneOf=c=>isList(d)?"main":z==="side"?"side":(c.type==="extra"?"extra":"main");
   pickList($("addList"),$("addFilter").value,c=>isList(d)?"＋1":"＋"+ZONE[zoneOf(c)],c=>{const id=ensure(c),zk=zoneOf(c);if(!addToDeck(d,zk,id,1))toast(capMsg(d),"レア度が違っても同じカードとして数えます。");else autoPut(d,kid(id));save();renderDecks()},CAT.add,"add");
-  const zt=$("zoneTabs");zt.innerHTML="";const zl=$("zoneList");zl.innerHTML="";
+  const zt=$("zoneTabs");zt.innerHTML="";const zl=$("zoneList");const keepY=zl.dataset.z===curZone+d.id?zl.scrollTop:0;zl.dataset.z=curZone+d.id;zl.innerHTML=""; /* 作り直しても、同じデッキ・区分ならスクロール位置を保つ */
   const [cm,cx,cs]=cnt(d);
   if(isList(d)&&(curZone==="extra"||curZone==="side")||curZone==="short")curZone="main";
   (isList(d)?[["main",`カード ${cm}枚`]]:[["main","メイン "+cm],["extra","EX "+cx],["side","サイド "+cs]]).forEach(([k,lab])=>{const b=document.createElement("button");b.setAttribute("role","tab");b.setAttribute("aria-selected",curZone===k);b.textContent=lab;if(k==="short")b.id="shortTab";b.onclick=()=>{curZone=k;renderDecks()};zt.append(b)});
@@ -649,6 +649,7 @@ function renderDecks(){
     const slot=dv=>{if(dv>0&&deckCnt(d,k)>=capOf(d)){toast(capMsg(d),"レア度が違っても同じカードとして数えます。");return}const v=d[zk][i]+dv;if(v<=0){delete d[zk][i];gc()}else d[zk][i]=v;clampPut(d);if(dv>0)autoPut(d,k);save();renderDecks()};
     qw.append(putQty(d,k));
     return detailRow(zl,limRow(d,c,li(c,qw)),"deck:"+zk,i,c,[["−",()=>slot(-1),`枠 ${d[zk][i]}`],["＋",()=>slot(1),`枠 ${d[zk][i]}`],["＋1",()=>{S.owned[i]=(S.owned[i]||0)+1;autoPut(d,k);okMsg=`「${c.name}」を所持に追加しました（所持${ownTot(k)}枚）`;save();renderDecks()},`所持 ${ownTot(k)}`],["レア度",()=>openDeckRar(zk,kid(i)),"レア度"]])});}
+  if(keepY)zl.scrollTop=keepY;
   // 不足は「不足カード」タブと同じ全体の計算（集計中のデッキ＋このデッキ、設定の数え方に合わせる）で出し、このデッキで使うカードだけを並べる
   const mine=new Set(Object.keys(deckNeed(d)).map(kid));
   const sl=$("shortList");sl.innerHTML="";let tot=0;
@@ -1336,6 +1337,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.16.8","2026年10月25日",["デッキの中で枠や所持の数を変えたとき、一覧の位置がずれないようにしました"]],
  ["2.16.7","2026年10月25日",["カードを開いたときのボタンを、「枠」「所持」「価格」「レア度」などのまとまりごとに横一列に並べるようにしました"]],
  ["2.16.6","2026年10月25日",["一覧のスクロールバーが右端の文字（「あと○枚」など）に重ならないようにしました"]],
  ["2.16.5","2026年10月24日",["デッキ一覧の「集計」スイッチを戻しました。オフにしたデッキ・グループのカードは不足カードに出ません"]],
