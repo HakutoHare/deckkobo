@@ -1,0 +1,43 @@
+# 遊戯王カードWiki から新弾のカードを読み込む（一時的）
+name: wiki-cards
+on:
+  push:
+    paths: [".github/workflows/wiki-cards.yml"]
+permissions: {contents: read}
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: fetch
+        shell: python
+        run: |
+          import urllib.request, urllib.parse, time, json, re, unicodedata
+          UA = "Mozilla/5.0 (deckkobo; github.com/HakutoHare/deckkobo)"
+          def src(pg):
+              u = "https://yugioh-wiki.net/index.php?cmd=source&page=" + urllib.parse.quote(pg.replace("－", "−").encode("euc-jp", "replace"))
+              try:
+                  b = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": UA}), timeout=30).read().decode("utf-8", "replace")
+              except Exception as e:
+                  return None
+              i = b.find("<pre"); j = b.find("</pre>")
+              return b[i:j] if i >= 0 else None
+          pack = None
+          for pg in ["IMMORTAL PHOENIX", "ＩＭＭＯＲＴＡＬ ＰＨＯＥＮＩＸ"]:
+              pack = src(pg); time.sleep(4)
+              if pack: print("PACKPAGE", pg); break
+          if not pack: print("PACK NOT FOUND"); raise SystemExit
+          lines = [l for l in pack.split("\n") if re.search(r"[A-Z]{2,5}-JP\d{3}", l)]
+          print("##PACK"); print("\n".join(lines))
+          names = []
+          for l in lines:
+              for m in re.findall(r"《(.+?)》", l):
+                  if m not in names: names.append(m)
+          have = {x[0] for x in json.load(open("cardlist.json"))} | set(json.load(open("extra.json"))["cards"])
+          z = lambda s: unicodedata.normalize("NFKC", s).replace(" ", "")
+          hz = {z(x) for x in have}
+          new = [n for n in names if n not in have and z(n) not in hz]
+          print("##COUNT", len(names), "new", len(new))
+          for n in new:
+              time.sleep(4); s = src("《" + n + "》")
+              print("##### " + n); print("\n".join((s or "NOTFOUND").split("\n")[:22])[:2500])
