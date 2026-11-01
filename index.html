@@ -645,7 +645,7 @@ function renderDecks(){
   const d=view==="edit"?deck():null;
   $("deckListView").hidden=!!d;$("deckEditView").hidden=!d;$("fab").hidden=!!d||$("tab-decks").hidden;
   if(!d)return;
-  $("deckTitle").textContent=d.name;{const p=deckPrice(d);$("deckPrice").innerHTML=p?`<span>合計金額</span><b>約${yen(p.sum)}</b>`+(p.priced<p.kinds?`<small>値段メモのある${p.priced}/${p.kinds}種</small>`:""):`<span>合計金額</span><small style="margin-left:0">カードを開いて「メモ」から値段を入れると表示されます</small>`}requestAnimationFrame(fitTitle);
+  $("deckTitle").textContent=d.name;{const p=deckPrice(d);$("deckPrice").innerHTML=p.none?`<span>足りない分の金額</span><b>¥0</b><small>すべて所持カードが入っています</small>`:p.priced?`<span>足りない分の金額</span><b>約${yen(p.sum)}</b>`+(p.priced<p.kinds?`<small>値段メモのある${p.priced}/${p.kinds}種</small>`:""):`<span>足りない分の金額</span><small style="margin-left:0">カードを開いて「メモ」から値段を入れると表示されます</small>`}requestAnimationFrame(fitTitle);
   {const over=[];const ids=new Set();["main","extra","side"].forEach(z=>Object.keys(d[z]).forEach(k=>ids.add(kid(k))));
     if(!isList(d))ids.forEach(id=>{const c=card(id);if(!c||!(c.name in LIMIT))return;const n=deckCnt(d,id),m=LIMIT[c.name];if(n>m)over.push(`${c.name}（${LIMLAB[m]}・${n}枚）`)});
     $("limWarn").hidden=!over.length;
@@ -661,7 +661,7 @@ function renderDecks(){
   const zoneOf=c=>isList(d)?"main":z==="side"?"side":(c.type==="extra"?"extra":"main");
   pickList($("addList"),$("addFilter").value,c=>isList(d)?"＋1":"＋"+ZONE[zoneOf(c)],c=>{const id=ensure(c),zk=zoneOf(c);if(!addToDeck(d,zk,id,1))toast(capMsg(d),"レア度が違っても同じカードとして数えます。");else autoPut(d,kid(id));save();renderDecks()},CAT.add,"add");
   const zt=$("zoneTabs");zt.innerHTML="";const zl=$("zoneList");const keepY=zl.dataset.z===curZone+d.id?zl.scrollTop:0;zl.dataset.z=curZone+d.id;zl.innerHTML=""; /* 作り直しても、同じデッキ・区分ならスクロール位置を保つ */
-  const [cm,cx,cs]=cnt(d);
+  const [cm,cx,cs]=cnt(d);const M=missOf(d);
   if(isList(d)&&(curZone==="extra"||curZone==="side")||curZone==="short")curZone="main";
   (isList(d)?[["main",`カード ${cm}枚`]]:[["main","メイン "+cm],["extra","EX "+cx],["side","サイド "+cs]]).forEach(([k,lab])=>{const b=document.createElement("button");b.setAttribute("role","tab");b.setAttribute("aria-selected",curZone===k);b.textContent=lab;if(k==="short")b.id="shortTab";b.onclick=()=>{curZone=k;renderDecks()};zt.append(b)});
   zl.hidden=curZone==="short";$("shortList").hidden=curZone!=="short";
@@ -670,7 +670,7 @@ function renderDecks(){
     grouped(zl,ids.map(item),c=>d[zk][c.id],c=>{const i=c.id;const k=kid(i),qw=document.createElement("span");qw.style.cssText="flex:none;display:flex;align-items:center;gap:4px";
     const slot=dv=>{if(dv>0&&deckCnt(d,k)>=capOf(d)){toast(capMsg(d),"レア度が違っても同じカードとして数えます。");return}const v=d[zk][i]+dv;if(v<=0){askSlotDel(c.name,()=>{delete d[zk][i];gc();clampPut(d);save();renderDecks()});return}d[zk][i]=v;clampPut(d);if(dv>0)autoPut(d,k);save();renderDecks()};
     qw.append(putQty(d,k));
-    const row=li(c,qw);{const u=unitPrice(i);if(u!=null){const e=document.createElement("span");e.className="cprice";e.textContent=`${yen(u)}`+(d[zk][i]>1?` ×${d[zk][i]}＝${yen(u*d[zk][i])}`:"");row.querySelector(".name").append(e)}}
+    const row=li(c,qw);{const u=unitPrice(i),ms=M[zk+"|"+i]||0;if(u!=null&&ms){const e=document.createElement("span");e.className="cprice";e.textContent=`${yen(u*ms)}`+(ms>1?`（${yen(u)}×${ms}）`:"");e.title=`足りない${ms}枚分`;row.querySelector(".name").append(e)}}
     return detailRow(zl,limRow(d,c,row),"deck:"+zk,i,c,[["−",()=>slot(-1),`枠 ${d[zk][i]}`],["＋",()=>slot(1),`枠 ${d[zk][i]}`],["＋1",()=>{S.owned[i]=(S.owned[i]||0)+1;autoPut(d,k);okMsg=`「${c.name}」を所持に追加しました（所持${ownTot(k)}枚）`;save();renderDecks()},`所持 ${ownTot(k)}`],["レア度",()=>openDeckRar(zk,kid(i)),"レア度"]])});}
   if(keepY)zl.scrollTop=keepY;
   // 不足は「不足カード」タブと同じ全体の計算（集計中のデッキ＋このデッキ、設定の数え方に合わせる）で出し、このデッキで使うカードだけを並べる
@@ -1368,6 +1368,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.17.4","2026年11月1日",["デッキの金額は、所持カードが入っていない足りない分だけで数えるようにしました"]],
  ["2.17.3","2026年11月1日",["デッキの中の上に、合計金額の欄を付けました","デッキの各カードの名前の下に、値段メモからの金額を小さく表示するようにしました"]],
  ["2.17.2","2026年11月1日",["値段メモを入れたカードがあるデッキは、デッキ一覧に合計金額の目安（中央値×枚数）を表示するようにしました"]],
  ["2.17.1","2026年10月29日",["設定の「EXデッキで使い回す」を戻しました。オンにすると、EXデッキのカードは持っている枚数をどのデッキにも入れられ、不足もいちばん多く使うデッキの枚数で数えます"]],
@@ -1452,13 +1453,14 @@ const CHANGELOG=[
 $("logBtn").onclick=()=>{$("logList").innerHTML=CHANGELOG.map(([v,d,items])=>`<section><h3>${esc(v)}<small>${esc(d)}</small></h3><ul>${items.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></section>`).join("");$("logList").scrollTop=0;$("logModal").hidden=false};
 // 値段メモ：カード名ごとに {店舗, レアリティ, 値段, 日付} を何件でも残し、平均・中央値などを出す（S.prices に保存）
 /* デッキの値段の目安：値段メモの中央値×枚数の合計（レア度を指定した枠は、そのレア度のメモがあればそれを使う） */
-function deckPrice(d){let sum=0,got=0;const ks=new Set();
-  ["main","extra","side"].forEach(z=>Object.entries(d[z]).forEach(([k,n])=>{const c=card(k);if(!c)return;ks.add(kid(k));const a=(S.prices||{})[c.name];if(!a||!a.length)return;
-    const r=krar(k),ar=r?a.filter(x=>x.r===r):[];const st=pstat(ar.length?ar:a);sum+=st.med*n;got++}));
-  const priced=new Set(["main","extra","side"].flatMap(z=>Object.keys(d[z]).filter(k=>card(k)&&((S.prices||{})[card(k).name]||[]).length).map(kid))).size;
-  return got?{sum,priced,kinds:ks.size}:null}
+/* 足りない枚数（枠のうち所持カードが入っていない分）。所持の入った分は、メイン→EX→サイドの順に枠へ割り当てる。戻り値 {"区分|カードキー": 枚数} */
+function missOf(d){const left={},out={};["main","extra","side"].forEach(z=>Object.entries(d[z]).forEach(([k,n])=>{const id=kid(k);if(!(id in left))left[id]=Math.min(putOf(d,id),deckCnt(d,id));const o=Math.min(n,left[id]);left[id]-=o;out[z+"|"+k]=n-o}));return out}
+/* デッキの値段の目安：足りない分だけ、値段メモの中央値×枚数を合計（レア度を指定した枠は、そのレア度のメモがあればそれを使う） */
+function deckPrice(d){const M=missOf(d);let sum=0;const need=new Set(),priced=new Set();
+  for(const zk in M){const n=M[zk];if(!n)continue;const k=zk.split("|").slice(1).join("|");if(!card(k))continue;need.add(kid(k));const u=unitPrice(k);if(u==null)continue;sum+=u*n;priced.add(kid(k))}
+  return need.size?{sum,priced:priced.size,kinds:need.size}:{sum:0,priced:0,kinds:0,none:true}}
 function unitPrice(k){const c=card(k);const a=c&&(S.prices||{})[c.name];if(!a||!a.length)return null;const r=krar(k),ar=r?a.filter(x=>x.r===r):[];return pstat(ar.length?ar:a).med}
-function deckPriceTxt(d){const p=deckPrice(d);return p?`<span class="dprice">約${yen(p.sum)}`+(p.priced<p.kinds?`<span>（値段メモのある${p.priced}/${p.kinds}種）</span>`:"")+"</span>":""}
+function deckPriceTxt(d){const p=deckPrice(d);return p.priced?`<span class="dprice">足りない分 約${yen(p.sum)}`+(p.priced<p.kinds?`<span>（値段メモのある${p.priced}/${p.kinds}種）</span>`:"")+"</span>":""}
 function yen(v){return "¥"+Math.round(v).toLocaleString("ja-JP")} // 起動直後の描画から呼ばれるので関数で書く
 function pstat(a){if(!a.length)return null;const v=a.map(x=>x.v).sort((x,y)=>x-y),n=v.length,sum=v.reduce((x,y)=>x+y,0);
   return {n,avg:sum/n,med:n%2?v[(n-1)/2]:(v[n/2-1]+v[n/2])/2,min:v[0],max:v[n-1]}}
