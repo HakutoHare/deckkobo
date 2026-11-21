@@ -1368,6 +1368,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.17.5","2026年11月21日",["「REVOLUTION BOOSTER －方界・マリンセス・ゴーストリック－」の新しいカード21種を追加しました"]],
  ["2.17.4","2026年11月1日",["デッキの金額は、所持カードが入っていない足りない分だけで数えるようにしました"]],
  ["2.17.3","2026年11月1日",["デッキの中の上に、合計金額の欄を付けました","デッキの各カードの名前の下に、値段メモからの金額を小さく表示するようにしました"]],
  ["2.17.2","2026年11月1日",["値段メモを入れたカードがあるデッキは、デッキ一覧に合計金額の目安（中央値×枚数）を表示するようにしました"]],
