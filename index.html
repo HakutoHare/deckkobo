@@ -121,7 +121,7 @@ input[type=search][placeholder],input[type=text][placeholder]{padding-right:30px
 input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;display:none}
 input[type=search][placeholder]:not(:placeholder-shown),input[type=text][placeholder]:not(:placeholder-shown){background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='9' fill='%23999'/%3E%3Cpath d='M6.5 6.5l7 7M13.5 6.5l-7 7' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;background-size:16px 16px}
 /* 不足カードの自動比較は休止中（html に noshort）。中身は残してあるので、noshort を外せば戻る */
-.noshort #shortTab,.noshort #incChip,.noshort .shortui{display:none!important}
+.noshort #incChip,.noshort .shortui{display:none!important}
 /* デッキの各カードの「所持から入れた枚数」 */
 .putb{flex:none;font:inherit;font-size:11px;font-weight:700;font-family:var(--f-num);border:1px solid var(--line);border-radius:99px;padding:2px 7px;margin-right:6px;background:var(--bg);color:var(--muted);cursor:pointer;white-space:nowrap}
 .putb.full{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
@@ -146,9 +146,9 @@ input[type=search][placeholder]:not(:placeholder-shown),input[type=text][placeho
 .dprice{display:block;font-weight:700;color:var(--fg)}
 .dprice span{font-weight:400;color:var(--muted)}
 /* デッキの中：上の合計金額の欄と、カード名の下の小さな金額 */
-.dpbar{display:flex;align-items:baseline;gap:8px;padding:6px 12px;border-radius:10px;background:var(--accent);color:var(--accent-fg);font-size:12px}
+.dpbar{display:flex;align-items:baseline;gap:8px;white-space:nowrap;padding:6px 12px;border-radius:10px;background:var(--accent);color:var(--accent-fg);font-size:12px}
 .dpbar b{font-size:17px;font-family:var(--f-num)}
-.dpbar small{opacity:.8;margin-left:auto;font-size:11px}
+.dpbar small{opacity:.8;margin-left:auto;font-size:11px;white-space:normal;text-align:right}
 .cn .cprice{grid-column:2;grid-row:3;display:block;font-size:10px;line-height:1.3;color:var(--muted);font-family:var(--f-num)}
 .cn .overmsg{grid-row:4!important}
 </style>
@@ -662,8 +662,8 @@ function renderDecks(){
   pickList($("addList"),$("addFilter").value,c=>isList(d)?"＋1":"＋"+ZONE[zoneOf(c)],c=>{const id=ensure(c),zk=zoneOf(c);if(!addToDeck(d,zk,id,1))toast(capMsg(d),"レア度が違っても同じカードとして数えます。");else autoPut(d,kid(id));save();renderDecks()},CAT.add,"add");
   const zt=$("zoneTabs");zt.innerHTML="";const zl=$("zoneList");const keepY=zl.dataset.z===curZone+d.id?zl.scrollTop:0;zl.dataset.z=curZone+d.id;zl.innerHTML=""; /* 作り直しても、同じデッキ・区分ならスクロール位置を保つ */
   const [cm,cx,cs]=cnt(d);const M=missOf(d);
-  if(isList(d)&&(curZone==="extra"||curZone==="side")||curZone==="short")curZone="main";
-  (isList(d)?[["main",`カード ${cm}枚`]]:[["main","メイン "+cm],["extra","EX "+cx],["side","サイド "+cs]]).forEach(([k,lab])=>{const b=document.createElement("button");b.setAttribute("role","tab");b.setAttribute("aria-selected",curZone===k);b.textContent=lab;if(k==="short")b.id="shortTab";b.onclick=()=>{curZone=k;renderDecks()};zt.append(b)});
+  if(isList(d)&&(curZone==="extra"||curZone==="side"))curZone="main";
+  (isList(d)?[["main",`カード ${cm}枚`],["short","不足"]]:[["main","メイン "+cm],["extra","EX "+cx],["side","サイド "+cs],["short","不足"]]).forEach(([k,lab])=>{const b=document.createElement("button");b.setAttribute("role","tab");b.setAttribute("aria-selected",curZone===k);b.textContent=lab;if(k==="short")b.id="shortTab";b.onclick=()=>{curZone=k;renderDecks()};zt.append(b)});
   zl.hidden=curZone==="short";$("shortList").hidden=curZone!=="short";
   if(curZone!=="short"){const zk=curZone;const ids=sortIds(Object.keys(d[zk]).filter(card));
     if(!ids.length)zl.innerHTML='<li class="empty">まだカードがありません。上の検索から追加してください。</li>';
@@ -674,17 +674,17 @@ function renderDecks(){
     return detailRow(zl,limRow(d,c,row),"deck:"+zk,i,c,[["−",()=>slot(-1),`枠 ${d[zk][i]}`],["＋",()=>slot(1),`枠 ${d[zk][i]}`],["＋1",()=>{S.owned[i]=(S.owned[i]||0)+1;autoPut(d,k);okMsg=`「${c.name}」を所持に追加しました（所持${ownTot(k)}枚）`;save();renderDecks()},`所持 ${ownTot(k)}`],["レア度",()=>openDeckRar(zk,kid(i)),"レア度"]])});}
   if(keepY)zl.scrollTop=keepY;
   // 不足は「不足カード」タブと同じ全体の計算（集計中のデッキ＋このデッキ、設定の数え方に合わせる）で出し、このデッキで使うカードだけを並べる
-  const mine=new Set(Object.keys(deckNeed(d)).map(kid));
-  const sl=$("shortList");sl.innerHTML="";let tot=0;
-  // 普段はカード名と「あと○枚」（このデッキの分）だけ。全体の不足・所持・ほかのデッキは ▶ で開いたときに出す
-  const rows=shortRows(S.decks.filter(x=>x.id===d.id||inc(x)),mine).filter(r=>r.lack>0&&r.uses[d.id]);const R={};
-  rows.forEach(r=>{r.mineN=Math.min(r.lack,r.uses[d.id]);R[r.k]=r;tot+=r.mineN});
-  grouped(sl,sortIds(rows.map(r=>r.k)).map(item),c=>R[c.id].mineN,c=>{const {k,need:n,own,lack,uses:us,mineN}=R[c.id];
-    const w=document.createElement("span");w.style.cssText="flex:none;text-align:right";w.innerHTML=`<span class="short">あと${mineN}枚</span><span class="uses">所持${own}</span>`;
-    const oth=Object.entries(us).filter(([did])=>did!==d.id);
-    const info=(lack>mineN?`全体ではあと${lack}枚（`:"（")+`所持${own}／${oth.length?"全体で":""}必要${n}）`;
-    const btns=oth.map(([did,v])=>[`${S.decks.find(x=>x.id===did).name}（${v}枚）`,()=>openDeck(did)]);
-    return detailRow(sl,li(c,w),"dshort",k,c,btns,{info,label:"ほかに使用："})});
+  /* このデッキの不足＝枠のうち所持カードが入っていない分。空いている所持カードで埋められる分は数えない（不足カードの画面と同じ数え方） */
+  const sl=$("shortList");sl.innerHTML="";let tot=0;const R={};
+  new Set(["main","extra","side"].flatMap(z=>Object.keys(d[z]).map(kid))).forEach(k=>{if(!card(k))return;const n=deckCnt(d,k),a=putOf(d,k),own=ownTot(k);
+    const free=shareK(k)?Math.max(0,own-a):Math.max(0,own-S.decks.reduce((t,x)=>t+putOf(x,k),0));
+    const lack=Math.max(0,n-a-free);if(lack>0){R[k]={k,n,a,own,lack,free};tot+=lack}});
+  grouped(sl,sortIds(Object.keys(R)).map(item),c=>R[c.id].lack,c=>{const {k,n,a,own,lack}=R[c.id];
+    const w=document.createElement("span");w.style.cssText="flex:none;text-align:right";w.innerHTML=`<span class="short">あと${lack}枚</span><span class="uses">所持${own}／枠${n}</span>`;
+    const addOwn=v=>{S.owned[k]=(S.owned[k]||0)+v;fillPut(k,v);okMsg=`「${c.name}」を所持に${v}枚追加しました（空いている枠に入れました）`;save();render()};
+    const oth=S.decks.filter(x=>x.id!==d.id&&deckCnt(x,k)>0).map(x=>[`${x.name}（${putOf(x,k)}/${deckCnt(x,k)}）`,()=>openDeck(x.id),"ほかのデッキ"]);
+    const btns=[["＋1",()=>addOwn(1),"所持に"],...(lack>1?[[`不足分＋${lack}`,()=>addOwn(lack),"所持に"]]:[]),...oth];
+    return detailRow(sl,li(c,w),"dshort",k,c,btns,{info:`このデッキに入れた所持 ${a}枚／枠 ${n}枚`})});
   const stb=$("shortTab");if(stb){stb.textContent=tot?`不足 ${tot}`:"不足 0";if(tot)stb.classList.add("warn")}
   if(!tot)sl.innerHTML='<li class="okmsg">不足カードはありません。</li>';
 }
@@ -1368,6 +1368,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.17.6","2026年11月21日",["デッキの中の「不足」タブを戻しました。このデッキの枠のうち、所持カードが入っていない分を出します"]],
  ["2.17.5","2026年11月21日",["「REVOLUTION BOOSTER －方界・マリンセス・ゴーストリック－」の新しいカード21種を追加しました"]],
  ["2.17.4","2026年11月1日",["デッキの金額は、所持カードが入っていない足りない分だけで数えるようにしました"]],
  ["2.17.3","2026年11月1日",["デッキの中の上に、合計金額の欄を付けました","デッキの各カードの名前の下に、値段メモからの金額を小さく表示するようにしました"]],
