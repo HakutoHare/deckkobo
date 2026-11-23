@@ -1088,7 +1088,7 @@ async function showVer(){
   fetch("sw.js").then(r=>r.text()).then(t=>{const m=t.match(/VERSION="([^"]+)"/);$("appVer").textContent=m?m[1]:"不明"}).catch(()=>{$("appVer").textContent="不明"});
 }
 showVer();
-const DATA_DATE="2026年9月24日時点";
+const DATA_DATE="2026年11月20日時点";
 // デッキリスト（PDF）の読み込み。ニューロンが出力する大会提出用の用紙の形に合わせている
 // PDF の文字と位置から、ゾーンごとの{name,n,t}を取り出す。「枚数」の見出しの位置で列を分ける
 function parseSheet(items){
@@ -1368,6 +1368,7 @@ $("txtForm").onsubmit=e=>{e.preventDefault();const t=$("txtIn").value;const r=pa
   renderImg();$("imgName").value=first&&!lookup(first.replace(/^\d\s*/,""))&&!/^[【\[]/.test(first)?first.slice(0,40):"";$("imgName").hidden=false;$("imgOk").hidden=false;$("imgModal").hidden=false};
 // 更新履歴（設定 → 更新履歴）。版を上げたら先頭に足す
 const CHANGELOG=[
+ ["2.17.7","2026年11月23日",["カードデータを更新しました（2026年11月20日時点、新カード107種）","テーマの絞り込みに「ラーの翼神竜・太陽神」「ハーピィ（ハーピィ・レディ）」のまとまりを足しました"]],
  ["2.17.6","2026年11月21日",["デッキの中の「不足」タブを戻しました。このデッキの枠のうち、所持カードが入っていない分を出します"]],
  ["2.17.5","2026年11月21日",["「REVOLUTION BOOSTER －方界・マリンセス・ゴーストリック－」の新しいカード21種を追加しました"]],
  ["2.17.4","2026年11月1日",["デッキの金額は、所持カードが入っていない足りない分だけで数えるようにしました"]],
